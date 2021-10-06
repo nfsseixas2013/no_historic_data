@@ -9,6 +9,7 @@ Created on Mon Oct  4 15:58:00 2021
 class link:
     def __init__(self, node1, node2,frequency_slot_size_cod):
         self.nodes = [node1, node2]
+        self.size = frequency_slot_size_cod
         if frequency_slot_size_cod == 0: # 0 for 5GHz, 1 for 6.25 GHz and 2 for 12.5GHz
             self.control = [[0,0,0] for x in range (0, 800) ]
         elif frequency_slot_size_cod == 1:
