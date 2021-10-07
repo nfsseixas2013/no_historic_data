@@ -97,11 +97,22 @@ class interface:
     def get_number_slots(self, need, mode): # need in Gbps
         # This method returns the number of slots needed to establish the lightpath.
         slot_type = self.net.links[0].size # In this case, I know the modulation for DL is 256 qam and for UL is 64 Qam 
-        if slot_type == 0:
+        if slot_type == 0: # 5GHz
             if mode == "DL":
                 slot_size = 40
             else:
                 slot_size = 30
+        elif slot_type == 1: # 6GHz
+            if mode == "DL":
+                slot_size = 48
+            else:
+                slot_size = 36
+        else:
+            if mode == "DL":
+                slot_size = 100
+            else:
+                slot_size = 75
+        # Once set the slot  size, we proceed with the calculation
         if slot_size >= need:
             return 1
         else:
@@ -120,7 +131,7 @@ class interface:
                 j.control[i][1] = modulation
                 j.control[i][0] = lightpath_id
                 
-  ##### These are interfaces with the lightṕath class   ####         
+  ##### These are interfaces with the lightpath class   ######         
     def establish_lightpath (self, source, destination, need, mode, lightpath_id):
         link_lists = self.get_all_links(source, destination)
         number_slots = self.get_number_slots(need, mode)

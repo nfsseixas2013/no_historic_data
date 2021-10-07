@@ -30,10 +30,13 @@ class node:
         for i in self.links:
             if self in i.nodes and hope in i.nodes:
                 return i
+            
+    def set_link(self, link):
+        self.links.append(link)
         
     def receive_msg(self):
         msg = yield self.connection.get()
-        print('the bits of lightpath %d have been received at %f' % (msg[2], self.env.now))
+        print('the bits of lightpath %d have been received at %f by node %d' % (msg[2], self.env.now, self.id))
         self.forwarding_msg(msg)
         
     def forwarding_msg(self,msg):

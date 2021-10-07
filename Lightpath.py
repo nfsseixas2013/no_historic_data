@@ -5,7 +5,7 @@ Created on Wed Oct  6 20:08:21 2021
 
 @author: nilton
 """
-import simpy
+
 import numpy as np
 
 class lightpath:
@@ -61,22 +61,21 @@ class lightpath:
         self.report.append([self.env, i])
         yield self.env.timeout(self.conf[0][0].cost) 
         
-    def sending_traffic(self, i): # Trick one, trying a connection doesn't mean you succeeded having it.
+    def sending_traffic(self, i): 
         if not self.connection:
             self.connection = self.establish_link(i)
-     
-        elif self.connection:
-            if i <= self.channel_size:
+            if self.connection:
                 self.sending_msg(i)
             else:
-                self.connection = self.update_lightpath(i)
-                if self.connection:
-                   self.sending_msg(i)
-                else:
-                   self.report.append([self.env, 0])
-                  
+                self.report.append([self.env, 0])
         else:
-            self.report.append([self.env, 0])
+            slot_available = self.interface.get_number_slots(self.channel_size, self.mode)
+            slot_needed = self.interface.get_number_slots(i, self.mode)
+            if slot_available - slot_needed != 0:
+                self.connection = self.update_lightpath(i)
+                self.sending_msg(i) # I'm not testing it because it's a reduction. Therefore, It must have slots enough.
+            else:
+                self.sending_msg(i)
           
     def run(self):
         if type(self.traffic) == list: 

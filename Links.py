@@ -18,7 +18,7 @@ class link:
             self.control = [[0,0,0] for x in range (0, 320) ] # [lightpath_id, modulation, control]
    #     self.env = env
         self.traffic = []
-        self.cost = cost * 5 # 5 microsseconds per km 
+        self.cost = cost * 0.000005 # 5 microsseconds per km 
         
     def add_traffic(self, time, load):
         self.traffic.append([time,load])
