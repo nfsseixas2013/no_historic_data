@@ -25,6 +25,7 @@ class network:
        self.env = env
        self.create_nodes()
        self.create_actors()
+       self.create_links()
        
     def create_graph(self):
         self.graph.add_weighted_edges_from(self.conf_graph)
