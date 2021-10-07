@@ -18,8 +18,8 @@ class node:
         self.next_hopes = [] # It's like a routing table. It holds the next hopes of lightpaths. Format:
         # i[0] = lightpath_id, i[1] = node
         
-    def set_hopes(self, conf): # adding lightpaths next hopes
-        self.next_hopes.append(conf)
+    def set_hopes(self, hope): # adding lightpaths next hopes
+        self.next_hopes.append(hope)
     
     def get_next_hope(self,msg): # getting lightpaths next hopes
         for i in self.next_hopes: 
@@ -31,7 +31,8 @@ class node:
             if self in i.nodes and hope in i.nodes:
                 return i
         
-    def receive_msg(self, msg):
+    def receive_msg(self):
+        msg = yield self.connection.get()
         print('the bits of lightpath %d has been received at %f' % (msg[2], self.env.now))
         self.forwarding_msg(msg)
         

@@ -120,7 +120,7 @@ class interface:
                 j.control[i][1] = modulation
                 j.control[i][0] = lightpath_id
                 
-  ##### These are interfaces with the lightṕath class            
+  ##### These are interfaces with the lightṕath class   ####         
     def establish_lightpath (self, source, destination, need, mode, lightpath_id):
         link_lists = self.get_all_links(source, destination)
         number_slots = self.get_number_slots(need, mode)
@@ -131,7 +131,7 @@ class interface:
             cod = self.test_allocation(template, number_slots)
             if cod != -1: # That means there's a space to put the request.
                 self.set_links_spectrum(i, cod, number_slots, mode, lightpath_id) # Setting configuration
-                return [i,[modulation for x in range(0, len(i))], channel_size]
+                return [i, channel_size]
         return None
                 
     def clean_lightpath(self, lightpath_id, links):
