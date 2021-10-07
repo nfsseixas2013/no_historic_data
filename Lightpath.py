@@ -53,42 +53,38 @@ class lightpath:
         self.nodes.clear()
         self.interface.clean_lightpath(self.id, self.conf[0])
         return self.establish_link(need)
+    
+    def sending_msg(self,i): # Modularization of sending of one msg
+        msg = [self.env,"bytes", self.id, i]
+        self.nodes[0].connection.put(msg)
+        self.nodes[0].env.process(self.nodes[0].forwarding(msg)) ## Formarding not receive # Lightpath just send.
+        self.report.append([self.env, i])
+        yield self.env.timeout(self.conf[0][0].cost) 
         
-    def sending_traffic(self, i):
+    def sending_traffic(self, i): # Trick one, trying a connection doesn't mean you succeeded having it.
         if not self.connection:
             self.connection = self.establish_link(i)
      
         elif self.connection:
             if i <= self.channel_size:
-                msg = [self.env,"bytes", self.id, i]
-                self.nodes[0].connection.put(msg)
-                self.nodes[0].env.process(self.nodes[0].forwarding(msg)) ## Formarding not receive # Lightpath just send.
-                self.report.append([self.env, i])
-                yield self.env.timeout(1)       
+                self.sending_msg(i)
             else:
-                self.report.append([self.env, 0])
                 self.connection = self.update_lightpath(i)
-                yield self.env.timeout(1)
+                if self.connection:
+                   self.sending_msg(i)
+                else:
+                   self.report.append([self.env, 0])
+                  
         else:
             self.report.append([self.env, 0])
-            yield self.env.timeout(1)
-    
+          
     def run(self):
         if type(self.traffic) == list: 
             for i in self.traffic:
                 self.sending_traffic(i)
+                yield self.env.timeout(1)
         else:
             while True:
                self.sending_traffic(np.random.poisson(self.traffic,1)[0]) 
                 
                 
-                
-                
-            
-        
-    
-    
-    
-            
-        
-    

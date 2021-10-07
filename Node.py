@@ -33,7 +33,7 @@ class node:
         
     def receive_msg(self):
         msg = yield self.connection.get()
-        print('the bits of lightpath %d has been received at %f' % (msg[2], self.env.now))
+        print('the bits of lightpath %d have been received at %f' % (msg[2], self.env.now))
         self.forwarding_msg(msg)
         
     def forwarding_msg(self,msg):
@@ -43,4 +43,7 @@ class node:
         next_hope.connection.put(msg) # Put the message int the store of the next node.
         next_hope.env.process(next_hope.receive_msg(msg)) # This is an interface. Must be implemented by the class Links
         link.add_traffic(self.env.now,msg[3])
+        yield self.env.timeout(link.cost)
+        
+        
         
