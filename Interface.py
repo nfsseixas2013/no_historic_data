@@ -17,7 +17,7 @@ class interface:
     def get_nodes_candidates(self, source, destination): # we will work with 2 paths for now...
         # source and destinations are nodes... Let's work with references (pointer style)
         # 
-        return list(it.islice(nx.all_shortest_paths(self.net.graph, source.id, destination.id), 2))
+        return list(it.islice(nx.all_shortest_paths(self.net.graph, source, destination), 2))
         # it most return the list of ids of nodes
         
     def nodes2links(self,path): # PRIVATE 
@@ -58,10 +58,11 @@ class interface:
         for i in paths:
             aux = []
             for j in range(0, len(i)):
-                nodes = self.get_nodes_objects(i[j]) # We get the nodes
+                nodes = self.get_nodes_object(i[j]) # We get the nodes
                 link = self.get_link_object(nodes[0], nodes[1]) # We get the link
                 aux.append(link) # We add the links of the ṕath
             result.append(aux) # here we add the entire path of links
+        return result
             
     ## So far, we got all objects of links candidates to test if there is spectrum space to allocate the demand.
     # Now, we run tests 
@@ -122,7 +123,7 @@ class interface:
                 count += 1
         return count
     
-    def set_links_spectrum(self, links, end, slot_numbers, mode, lightpath_id):
+    def set_links_spectrum(self, links, end, slot_numbers, mode, lightpath_id):### TO FIX
         ranges = [x for x in range(end-slot_numbers+1, end+1)]
         modulation = 0 if mode == "DL" else 1 # 0 = 256 QAM, 1 = 64 QAM
         for i in ranges:
@@ -133,7 +134,7 @@ class interface:
                 
   ##### These are interfaces with the lightpath class   ######         
     def establish_lightpath (self, source, destination, need, mode, lightpath_id):
-        link_lists = self.get_all_links(source, destination)
+        link_lists = self.get_all_links_objects(source, destination)
         number_slots = self.get_number_slots(need, mode)
         modulation = 0 if mode == "DL" else 1 # 0 = 256 QAM, 1 = 64 QAM
         channel_size = 40 * number_slots if modulation == 0 else 30 * number_slots

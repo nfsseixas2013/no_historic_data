@@ -12,13 +12,13 @@ class lightpath:
     
     def __init__(self, env, cod, interface, mode, source, destination, traffic):
         self.id = cod
-        self.nodes = None
+        self.nodes = []
         self.interface = interface
         self.mode = mode
         self.channel_size = 0
         self.source = source
         self.destination = destination
-        self.conf = None
+        self.conf = []
         self.env = env
         self.report = []
         self.traffic = traffic
@@ -36,7 +36,7 @@ class lightpath:
         for i in links:
             result.append(i.nodes[0])
             result.append(i.nodes[1])
-        return set(result)
+        return list(set(result))
             
               
     def establish_link(self, need): # It uses the interface to set the lightpath spectrum
@@ -54,7 +54,7 @@ class lightpath:
         self.interface.clean_lightpath(self.id, self.conf[0])
         return self.establish_link(need)
     
-    def sending_msg(self,i): # Modularization of sending of one msg
+    def sending(self,i): # Modularization of sending of one msg
         msg = [self.env,"bytes", self.id, i]
         self.nodes[0].connection.put(msg)
         self.nodes[0].env.process(self.nodes[0].forwarding(msg)) ## Formarding not receive # Lightpath just send.
@@ -65,7 +65,7 @@ class lightpath:
         if not self.connection:
             self.connection = self.establish_link(i)
             if self.connection:
-                self.sending_msg(i)
+                self.sending(i)
             else:
                 self.report.append([self.env, 0])
         else:
@@ -73,9 +73,9 @@ class lightpath:
             slot_needed = self.interface.get_number_slots(i, self.mode)
             if slot_available - slot_needed != 0:
                 self.connection = self.update_lightpath(i)
-                self.sending_msg(i) # I'm not testing it because it's a reduction. Therefore, It must have slots enough.
+                self.sending(i) # I'm not testing it because it's a reduction. Therefore, It must have slots enough.
             else:
-                self.sending_msg(i)
+                self.sending(i)
           
     def run(self):
         if type(self.traffic) == list: 
