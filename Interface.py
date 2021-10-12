@@ -121,7 +121,7 @@ class interface:
         else:
             count = 1
             while slot_size < need:
-                slot_size += slot_size
+                slot_size += 40
                 count += 1
         return count
     
@@ -166,6 +166,8 @@ class interface:
             for j in range(0, len(i.control)):
                 if i.control[j][0] == lightpath_id:
                     i.control[j][0] = 0
+                    i.control[j][1] = 0
+                    i.control[j][2] = 0
         
            
     
