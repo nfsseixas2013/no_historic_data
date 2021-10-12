@@ -24,7 +24,7 @@ class node:
     def get_next_hope(self,msg): # getting lightpaths next hopes
         for i in self.next_hopes: 
             if i[0] == msg[2]: # i[0] = lightpath_id, i[1] = node
-                return i
+                return i[1]
             
     def get_link(self, hope):
         for i in self.links:
@@ -37,16 +37,17 @@ class node:
     def receive_msg(self):
         msg = yield self.connection.get()
         print('the bits of lightpath %d have been received at %f by node %d' % (msg[2], self.env.now, self.id))
-        self.forwarding_msg(msg)
+        self.env.process(self.forwarding_msg(msg))
         
     def forwarding_msg(self,msg):
         # Taking the next hope
         next_hope = self.get_next_hope(msg) 
         link = self.get_link(next_hope)  
-        next_hope.connection.put(msg) # Put the message int the store of the next node.
-        next_hope.env.process(next_hope.receive_msg(msg)) # This is an interface. Must be implemented by the class Links
-        link.add_traffic(self.env.now,msg[3])
         yield self.env.timeout(link.cost)
+        next_hope.connection.put(msg) # Put the message int the store of the next node.
+        next_hope.env.process(next_hope.receive_msg()) # This is an interface. Must be implemented by the class Links
+        link.add_traffic(self.env.now,msg[3])
+       
         
         
         

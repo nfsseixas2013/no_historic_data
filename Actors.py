@@ -13,7 +13,7 @@ class Actor(node):
     def __init__(self, cod, env):
         super().__init__(cod, env)
         
-    def receive_msg(self, msg):
+    def receive_msg(self):
         msg = yield self.connection.get()
         print('the bits of lightpath %d has been received at %f by node %d' % (msg[2], self.env.now, self.id))
     

@@ -13,6 +13,7 @@ class interface:
     
     def __init__(self, net):
         self.net = net
+        self.path = []
         
     def get_nodes_candidates(self, source, destination): # we will work with 2 paths for now...
         # source and destinations are nodes... Let's work with references (pointer style)
@@ -34,6 +35,7 @@ class interface:
         paths = []
         for i in nodes_ref:
             paths.append(self.nodes2links(i))
+            self.path.append(i)
         return paths
     
     def get_nodes_object(self, link):# link is a tuple Ex. (1,2)
@@ -132,18 +134,31 @@ class interface:
                 j.control[i][1] = modulation
                 j.control[i][0] = lightpath_id
                 
+    def get_node_indice(self, indice):
+        for i in self.net.nodes:
+            if i.id == indice:
+                return i
+            
+    def get_node_list(self,lista):
+        result = []
+        for i in lista:
+            result.append(self.get_node_indice(i))
+        return result
+                
   ##### These are interfaces with the lightpath class   ######         
     def establish_lightpath (self, source, destination, need, mode, lightpath_id):
         link_lists = self.get_all_links_objects(source, destination)
         number_slots = self.get_number_slots(need, mode)
         modulation = 0 if mode == "DL" else 1 # 0 = 256 QAM, 1 = 64 QAM
         channel_size = 40 * number_slots if modulation == 0 else 30 * number_slots
+        indice_path = 0
         for i in link_lists:
             template = self.test_path(i)
             cod = self.test_allocation(template, number_slots)
             if cod != -1: # That means there's a space to put the request.
                 self.set_links_spectrum(i, cod, number_slots, mode, lightpath_id) # Setting configuration
-                return [i, channel_size]
+                return [i, channel_size, self.get_node_list(self.path[indice_path])]
+            indice_path += 1
         return None
                 
     def clean_lightpath(self, lightpath_id, links):
