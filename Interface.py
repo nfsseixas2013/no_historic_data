@@ -8,6 +8,7 @@ Created on Tue Oct  5 19:31:00 2021
 
 import networkx as nx
 import itertools as it
+import copy as c
 
 class interface:
     
@@ -15,10 +16,11 @@ class interface:
         self.net = net
         self.path = []
         
-    def get_nodes_candidates(self, source, destination): # we will work with 2 paths for now...
-        # source and destinations are nodes... Let's work with references (pointer style)
+    def get_nodes_candidates(self, source, destination): # we will work with 2 paths for now...(PRIVATE)
+        # source and destinations are nodes id...
         # 
-        return list(it.islice(nx.all_shortest_paths(self.net.graph, source, destination), 2))
+        return list(it.islice(nx.shortest_simple_paths(self.net.graph, source, destination), 3))
+        #return list(nx.shortest_simple_paths(self.net.graph, source, destination))
         # it most return the list of ids of nodes
         
     def nodes2links(self,path): # PRIVATE 
@@ -28,14 +30,15 @@ class interface:
             result.append((path[i],path[i+1]))
         return result
     
-    def get_links_candidates(self, source, destination):
+    def get_links_candidates(self, source, destination):#(PRIVATE)
         # The goal of this method is call recursively the method nodes2links to transform all candidate nodes
         # in tuples of links. Ex. [[x,y,z], [a,b,c]]->[[(x,y), (y,z)], [(a,b), (b,c)]]
         nodes_ref = self.get_nodes_candidates(source, destination)
         paths = []
+        self.path = []
         for i in nodes_ref:
             paths.append(self.nodes2links(i))
-            self.path.append(i)
+            self.path.append(i) # This is the set of nodes id in the exact order in the paths. 
         return paths
     
     def get_nodes_object(self, link):# link is a tuple Ex. (1,2)
@@ -44,13 +47,13 @@ class interface:
         for i in self.net.nodes:
             if i.id == link[0] or i.id == link[1]:
                 nodes.append(i)      
-        return nodes
+        return nodes # Return the references of nodes
     
     def get_link_object(self, node1, node2):
         # With the 2 nodes of a link, we can get the link object
         for i in self.net.links:
             if node1 in i.nodes and node2 in i.nodes:
-                return i
+                return i # Sending references of the link object
     
     def get_all_links_objects(self,source, destination):
         # This is a recursive method that gets [(1,2),(2,3)],[(5,6),(6,7)] -> [[link1, link2],[link3, link4]]
@@ -139,7 +142,7 @@ class interface:
             if i.id == indice:
                 return i
             
-    def get_node_list(self,lista):
+    def get_node_list(self,lista):# get the path nodes in the correct order
         result = []
         for i in lista:
             result.append(self.get_node_indice(i))
@@ -148,10 +151,11 @@ class interface:
   ##### These are interfaces with the lightpath class   ######         
     def establish_lightpath (self, source, destination, need, mode, lightpath_id):
         link_lists = self.get_all_links_objects(source, destination)
+        self.putting_order()
         number_slots = self.get_number_slots(need, mode)
         modulation = 0 if mode == "DL" else 1 # 0 = 256 QAM, 1 = 64 QAM
         channel_size = 40 * number_slots if modulation == 0 else 30 * number_slots
-        indice_path = 0
+        indice_path = 0 # To get the indice of path with nodes id
         for i in link_lists:
             template = self.test_path(i)
             cod = self.test_allocation(template, number_slots)
@@ -168,7 +172,32 @@ class interface:
                     i.control[j][0] = 0
                     i.control[j][1] = 0
                     i.control[j][2] = 0
+                    
+    def get_weight_list(self, link):# List of links
+        result = []
+        for i in link:
+            soma = 0
+            for j in range(0, len(i)):
+                soma += self.net.graph.get_edge_data(i[j][0], i[j][1])["weight"]
+            result.append(soma)
+        return result
+    
+    def put_path_order(self, result):
+        for i in range(0, len(result)):
+            for j in range(i+1, len(result)):
+                if result[i] > result[j]:
+                    aux = c.copy(self.path[i])
+                    self.path[i] = c.copy(self.path[j])
+                    self.path[j] = c.copy(aux)
         
+        
+    def putting_order(self):
+         links = []
+         for i in self.path:
+             links.append(self.nodes2links(i))
+         result = self.get_weight_list(links)
+         self.put_path_order(result)
+         
            
     
                 

@@ -31,22 +31,30 @@ class node:
             if self in i.nodes and hope in i.nodes:
                 return i
             
-    def set_link(self, link):
+    def set_link(self, link): # Adding list of links to insert the traffic and get the cost of the link
         self.links.append(link)
         
-    def receive_msg(self):
+    def receive_msg(self): # That's a switch, therefore it must forward the bits through the circuits
         msg = yield self.connection.get()
         print('the bits of lightpath %d have been received at %f by node %d' % (msg[2], self.env.now, self.id))
         self.env.process(self.forwarding_msg(msg))
         
     def forwarding_msg(self,msg):
         # Taking the next hope
-        next_hope = self.get_next_hope(msg) 
-        link = self.get_link(next_hope)  
-        yield self.env.timeout(link.cost)
+        next_hope = self.get_next_hope(msg) # Getting the referenceof the next node
+        link = self.get_link(next_hope)  # Getting the link
+        yield self.env.timeout(link.cost) # 
         next_hope.connection.put(msg) # Put the message int the store of the next node.
         next_hope.env.process(next_hope.receive_msg()) # This is an interface. Must be implemented by the class Links
-        link.add_traffic(self.env.now,msg[3])
+        link.add_traffic(self.env.now,msg[3]) # Adding traffic to the link
+        
+    def get_index_next_hope(self, id_cod):
+        for i in range(0, len(self.next_hopes)):
+            if self.next_hopes[i][0] == id_cod:
+                return i
+            
+    def remove_item_next_hope(self, id_cod):
+        del self.next_hopes[self.get_index_next_hope(id_cod)]
        
         
         
