@@ -9,6 +9,81 @@ Created on Tue Oct  5 19:31:00 2021
 import networkx as nx
 import itertools as it
 import copy as c
+#from RMSA_ILP import rmsa_ilp
+
+##### Sorted links ########
+def get_nodes_candidates(net, source, destination):
+   paths =  list(it.islice(nx.shortest_simple_paths(net.graph, source, destination), 3))
+   links = []
+   for i in paths:
+       link = nodes2links(i)
+       links.append(link)
+   links = sorting_paths(net,links)
+   return links
+   
+
+def nodes2links(path): # PRIVATE 
+        # The goal of this method is return list of links of the same path. Ex. [x,y,z]->[(x,y), (y,z)]
+        result = []
+        for i in range(0, len(path)-1):
+            result.append((path[i],path[i+1]))
+        return result
+
+def get_weight_links(net, links): ## Get the sum of the weights ## PUBLIC
+    pesos = []
+    for i in links:
+        soma = 0
+        for j in i:
+            soma += net.graph.edges[j]["weight"]
+        pesos.append(soma)
+    return pesos
+
+def sorting_paths(net, links): # here I use bubble sort to put paths in ascending order. ## PRIVATE
+    pesos = get_weight_links(net, links)
+    enlace =  links.copy()
+    for i in range(0,len(enlace)):
+        for j in range(i+1, len(pesos)):
+             if pesos[i] > pesos[j]:
+                    aux = c.copy(enlace[i])
+                    enlace[i] = enlace[j]
+                    enlace[j] = c.copy(aux)
+                    ##
+                    aux = pesos[i]
+                    pesos[i] = pesos[j]
+                    pesos[j] = aux
+    return enlace
+
+############################FILLING the ILP #######################################
+
+def fill_gama(d,p,c,m,canais_candidatos, ILP): 
+    for d_ in d:
+        for p_ in p:
+            for c_ in c:
+                for m_ in m:
+                    for s in canais_candidatos:
+                        for i in range(s[m_][0], s[m_][1]):
+                            ILP.set_slices((d_,p_,c_,m_,i))
+
+def fill_links(e,d,p, ILP):
+    for e_ in e:
+        for d_ in d:
+            for p_ in p:
+                ILP.set_links((e_,d_,p_))
+
+def fill_dpm(d,p,m,custos, ILP):
+    contador = 0
+    for d_ in d:
+        for p_ in p:
+            for m_ in m:
+                ILP.set_dpm((d_,p_,m_),custos[contador])
+                contador += 1
+                
+def fill_latencies(latencias, ILP):
+    ILP.set_latencias(latencias)
+                                
+###################################################################################
+                
+'''
 
 class interface:
     
@@ -23,12 +98,7 @@ class interface:
         #return list(nx.shortest_simple_paths(self.net.graph, source, destination))
         # it most return the list of ids of nodes
         
-    def nodes2links(self,path): # PRIVATE 
-        # The goal of this method is return list of links of the same path. Ex. [x,y,z]->[(x,y), (y,z)]
-        result = []
-        for i in range(0, len(path)-1):
-            result.append((path[i],path[i+1]))
-        return result
+    
     
     def get_links_candidates(self, source, destination):#(PRIVATE)
         # The goal of this method is call recursively the method nodes2links to transform all candidate nodes
@@ -172,6 +242,8 @@ class interface:
                     i.control[j][0] = 0
                     i.control[j][1] = 0
                     i.control[j][2] = 0
+
+# Sorting Candidates
                     
     def get_weight_list(self, link):# List of links
         result = []
@@ -199,7 +271,7 @@ class interface:
          self.put_path_order(result)
          
            
-    
+''' 
                 
                 
         
