@@ -29,7 +29,7 @@ class lightpath:
     def set_lightpaths(self):
         for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
             self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
-    
+   ''' 
     def get_nodes(self): # It receives (1,2), (2,3) -> [1,2,2,3] -> [1,2,3] * Nodes references
         for i in self.conf[2]: # This conf delivers the exact order of nodes.
             self.nodes.append(i)
@@ -92,4 +92,4 @@ class lightpath:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0]) 
                 
-                
+   '''             
