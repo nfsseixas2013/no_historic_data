@@ -3,6 +3,9 @@ from Network import network
 import Interface
 import simpy
 from RMSA_ILP import rmsa_ilp
+from Lightpath import lightpath
+
+
 def test_get_candidates():
     env = simpy.Environment()
     topologia = [(1,2,10),(2,3,10), (3,4,10), (4,5,10)]
@@ -87,3 +90,51 @@ def test_ILP_FILLING_dpm():
     Interface.fill_dpm([0],[0],[0,1],[20,30], ILP)
     Interface.fill_dpm([0],[1],[0,1],[30,40], ILP)
     print(ILP.dpm)
+
+def test_get_link_ref_lists():
+    env = simpy.Environment()
+    topologia = [(1,2,10),(2,3,10), (3,4,10), (4,5,10), (5,6,10), (1,7,15), (7,8,10), (8,9,10),(9,6,25)]
+    switches = [2,3,4,5,7,8,9]
+    actors = [1,6]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,1,'DL',1,6,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    print(Interface.get_links_ref_list(slice1.links_candidates,net))
+
+def test_get_template():
+    env = simpy.Environment()
+    topologia = [(1,2,10),(2,3,10), (3,4,10), (4,5,10), (5,6,10), (1,7,15), (7,8,10), (8,9,10),(9,6,25)]
+    switches = [2,3,4,5,7,8,9]
+    actors = [1,6]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,1,'DL',1,6,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    links = Interface.get_links_ref_list(slice1.links_candidates,net)
+    template = Interface.get_template(links[0],0)
+    print(template)
+    
+def test_allocation():
+    env = simpy.Environment()
+    topologia = [(1,2,10),(2,3,10), (3,4,10), (4,5,10), (5,6,10), (1,7,15), (7,8,10), (8,9,10),(9,6,25)]
+    switches = [2,3,4,5,7,8,9]
+    actors = [1,6]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,1,'DL',1,6,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    links = Interface.get_links_ref_list(slice1.links_candidates,net)
+    template = Interface.get_template(links[0],0)
+    print(Interface.test_allocation(template,Interface.get_number_slots(60,0,net)))
+    
+

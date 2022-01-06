@@ -80,7 +80,108 @@ def fill_dpm(d,p,m,custos, ILP):
                 
 def fill_latencies(latencias, ILP):
     ILP.set_latencias(latencias)
-                                
+    
+############################## Parameters of ILP ##################################
+    
+def get_link_id(link,net):
+    for i in net.links:
+        if (i.nodes[0].id == link[0] or i.nodes[0].id == link[1]) and (i.nodes[1].id == link[0] or i.nodes[1].id == link[1]):
+            return i.id
+        
+def get_cost(links,modulation,net):# Only for test. Shall be changed
+   # 1 kwh per kilometer modulation 1
+   # 2 Kwh per kilometer modulation 2
+   costs = []
+   for m in modulation:
+       soma = 0
+       for l in links:
+           if m == 0:
+               soma += net.graph.edges[l]["weight"]
+           else:
+               soma += 2 * net.graph.edges[l]["weight"]
+       costs.append(soma)
+   return costs
+   
+   
+def get_number_slots(need, modulacao, net): # need in Gbps
+        # This method returns the number of slots needed to establish the lightpath.
+        slot_type = net.links[0].size # The size is equal to everyone
+        
+        if modulacao == 1:
+            if slot_type == 0: # 5GHZ
+                slot_size = 40
+            elif slot_type == 1: # 6.25GHZ
+                slot_size = 48
+            else:
+                slot_size = 100 # 12.5 GHZ
+        else:
+            if slot_type == 0:
+                slot_size = 30
+            elif slot_type == 1:
+                slot_size = 36
+            else:
+                slot_size = 75
+        
+        # Once set the slot  size, we proceed with the calculation
+        if slot_size >= need:
+            return 1
+        else:
+            count = 1
+            while slot_size < need:
+                slot_size += slot_size
+                count += 1
+        return count
+
+
+def get_link_ref(link,net):## Link is a tuple
+    for i in net.links:
+        if (i.nodes[0].id == link[0] or i.nodes[0].id == link[1]) and (i.nodes[1].id == link[0] or i.nodes[1].id == link[1]):
+            return i
+        
+def get_links_ref_list(links,net): # return the references of the links
+    lista = []
+    for i in links:
+        aux = []
+        for j in i: # to break into tuples
+            aux.append(get_link_ref(j,net)) # I did that to separate links candidates of different paths
+        lista.append(aux)
+    return lista
+
+def get_template(links, modulation): # It receives a list of links(references) and return a template of use of the spectrum
+        resposta = []
+        for i in range(0, len(links[0].control[modulation])):# Every link.control has the same size.
+            flag = 0
+            for j in links:
+                if j.control[modulation][i][2] == 1:
+                    resposta.append(1)
+                    flag = 1
+                    break
+            if flag == 0:
+                resposta.append(0)
+        return resposta  # This answer will hold a template of the state of the network.
+
+def test_allocation(template, slot_numbers):
+        # This method verifies if the the template has the necessary number of frequency slots to hold the requisition
+        counter = 0
+        for i in range(0, len(template)):
+            if template[i] == 0:
+                counter += 1
+                if counter == slot_numbers:
+                    break
+            else:
+                counter = 0
+        if counter == slot_numbers:
+            return i # if there's space, then this method should deliver the end **
+        else:
+            return -1
+
+def set_links_spectrum(links, end, slot_numbers, modulation, lightpath_id):### TO FIX
+        ranges = [x for x in range(end-slot_numbers+1, end+1)]
+        for i in ranges:
+            for j in links:
+                j.control[modulation][i][2] = 1
+                j.control[modulation][i][0] = lightpath_id
+    
 ###################################################################################
                 
 '''

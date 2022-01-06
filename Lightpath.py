@@ -7,13 +7,13 @@ Created on Wed Oct  6 20:08:21 2021
 """
 
 import numpy as np
+import Interface
 
 class lightpath:
     
-    def __init__(self, env, cod, interface, mode, source, destination, traffic):
+    def __init__(self, env, cod, mode, source, destination, traffic, net):
         self.id = cod
         self.nodes = []
-        self.interface = interface
         self.mode = mode
         self.channel_size = 0
         self.source = source
@@ -23,13 +23,80 @@ class lightpath:
         self.report = []
         self.traffic = traffic
         self.connection = False
-        self.env.process(self.run())
+        ## parameters of ilp
+        self.links_candidates = []
+        self.links_ids = []
+        self.links_costs = []
+        self.links_ref = []
+        self.slices = []
+        self.net = net
+        self.traffic_predicted = traffic[0] ## depois mudar isso
+       # self.env.process(self.run())
        
         
+    #### Preparations to get ILP parameters
+    def get_links_candidates(self): # It returns format [(1,2),(2,3)]
+        self.links_candidates = Interface.get_nodes_candidates(self.net,self.source, self.destination)
+        
+    def get_links_ids(self): # The purpose is get the ids of the links to fill edp constant in the ILP
+        links_ids = []
+        for i in self.links_candidates:
+            aux = []
+            for j in i:# list of list
+               aux.append(Interface.get_link_id(j,self.net))
+            links_ids.append(aux)
+        self.links_ids = links_ids # We get the links separeted by path candidate
+    
+    def get_links_costs(self): # This function returns the cost per path. The function in the interface must change 
+        for i in self.links_candidates:
+            self.links_costs.append(Interface.get_cost(i,[0,1],self.net))
+            
+    def get_links_refs(self):## getting the links objects to calculate teh template
+        self.links_ref = Interface.get_links_ref_list(self.links_candidates,self.net)
+    
+    def get_slices_indices(self):## This function returns the interval of slices candidates
+        self.get_links_refs()
+        number_slots = []
+        templates = []
+        for i in self.mode:
+            number_slots.append(Interface.get_number_slots(self.traffic_predicted,i,self.net)) # number of slots per modulation
+        for i in self.links_ref:
+            aux = []
+            for j in self.mode:
+                aux.append(Interface.get_template(i,j))
+            templates.append(aux)
+        slices = []
+        for i in templates:
+            indice = 0
+            aux = []
+            for j in i:
+               end = Interface.test_allocation(j,number_slots[indice])
+               start = end-number_slots[indice]+1
+               aux.append([start,end+1])
+               indice += 1
+            slices.append(aux)
+        self.slices = slices
+        return slices
+                
+       
+    def set_ILP(self,ILP): # Incomplete. Need to set the spectrum.
+        self.get_links_candidates()
+        self.get_links_ids()
+        self.get_links_costs()
+        self.get_slices_indices()
+        for p in range(0,len(self.links_candidates)):
+            Interface.fill_links(self.links_ids[p],[self.id],[p],ILP)
+            Interface.fill_dpm([self.id],[p],self.mode,self.links_costs[p],ILP)
+            Interface.fill_gama([self.id],[p],[0],self.mode,[self.slices[p]],ILP)
+            
+#########################################################################################################################
+            
     def set_lightpaths(self):
         for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
-            self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
-   ''' 
+            self.nodes[i].set_hopes([self.id, self.nodes[i+1]])          
+        
+    
+''' 
     def get_nodes(self): # It receives (1,2), (2,3) -> [1,2,2,3] -> [1,2,3] * Nodes references
         for i in self.conf[2]: # This conf delivers the exact order of nodes.
             self.nodes.append(i)
@@ -92,4 +159,4 @@ class lightpath:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0]) 
                 
-   '''             
+'''             
