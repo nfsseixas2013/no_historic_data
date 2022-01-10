@@ -31,14 +31,18 @@ class lightpath:
         self.slices = []
         self.net = net
         self.traffic_predicted = traffic[0] ## depois mudar isso
+        self.path = 0 # defined by ILP solution
+        self.modulation = 0 # defined by ILP solution
        # self.env.process(self.run())
        
         
-    #### Preparations to get ILP parameters
-    def get_links_candidates(self): # It returns format [(1,2),(2,3)]
+######## Preparations to get ILP parameters  ########################
+    def get_links_candidates(self): ## REF1
+        # It returns format [(1,2),(2,3)]
         self.links_candidates = Interface.get_nodes_candidates(self.net,self.source, self.destination)
         
-    def get_links_ids(self): # The purpose is get the ids of the links to fill edp constant in the ILP
+    def get_links_ids(self): # REF2
+        # The purpose is get the ids of the links to fill edp constant in the ILP
         links_ids = []
         for i in self.links_candidates:
             aux = []
@@ -47,47 +51,104 @@ class lightpath:
             links_ids.append(aux)
         self.links_ids = links_ids # We get the links separeted by path candidate
     
-    def get_links_costs(self): # This function returns the cost per path. The function in the interface must change 
+    def get_links_costs(self): # REF3
+        # This function returns the cost per path. The function in the interface must change 
         for i in self.links_candidates:
             self.links_costs.append(Interface.get_cost(i,[0,1],self.net))
             
-    def get_links_refs(self):## getting the links objects to calculate teh template
+    def get_links_refs(self):# REF4
+        ## getting the links objects to calculate teh template
         self.links_ref = Interface.get_links_ref_list(self.links_candidates,self.net)
-    
-    def get_slices_indices(self):## This function returns the interval of slices candidates
-        self.get_links_refs()
+        
+        
+    def get_slots_number(self,traffic): # REF5
         number_slots = []
+        for i in self.mode:# It gets the number of slots per modulation
+            number_slots.append(Interface.get_number_slots(traffic,i,self.net))
+        return number_slots
+        
+    def get_templates(self): # REF6
         templates = []
-        for i in self.mode:
-            number_slots.append(Interface.get_number_slots(self.traffic_predicted,i,self.net)) # number of slots per modulation
         for i in self.links_ref:
             aux = []
             for j in self.mode:
-                aux.append(Interface.get_template(i,j))
+                aux.append([Interface.get_template(i,j),i])# Creating a reference for links and templates
             templates.append(aux)
+        return templates # Templates per modulation and per path
+    
+
+    def set_slices_candidates(self, modulation,slice_range,links): # REF7
+        #The purpose is control what range will be picked as slices candidates to different modulations
+       ## In this case, modulation will be the index of templates at get_slices_indices 
+       Interface.set_links_spectrum(links,slice_range,modulation,self.id)
+    
+    
+    def get_slices_indices(self,traffic): # REF8 -> REF5,REF6,REF7
+        ## This function returns the interval of slices candidates
+        templates = self.get_templates() # REF6
+        number_slots = self.get_slots_number(traffic) # REF5
         slices = []
         for i in templates:
             indice = 0
             aux = []
             for j in i:
-               end = Interface.test_allocation(j,number_slots[indice])
+               end = Interface.test_allocation(j[0],number_slots[indice])
                start = end-number_slots[indice]+1
                aux.append([start,end+1])
+               ## Call here the set_slices_candidates
+               self.set_slices_candidates(indice,aux,j[1])# REF7
                indice += 1
             slices.append(aux)
         self.slices = slices
         return slices
-                
-       
-    def set_ILP(self,ILP): # Incomplete. Need to set the spectrum.
-        self.get_links_candidates()
-        self.get_links_ids()
-        self.get_links_costs()
-        self.get_slices_indices()
+    
+    
+    def set_ILP(self,traffic,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
+        self.get_links_candidates() # REF1
+        self.get_links_refs() # REF4
+        self.get_links_ids() # REF2
+        self.get_links_costs()# REF3
+        self.get_slices_indices(traffic) # REF8
         for p in range(0,len(self.links_candidates)):
             Interface.fill_links(self.links_ids[p],[self.id],[p],ILP)
             Interface.fill_dpm([self.id],[p],self.mode,self.links_costs[p],ILP)
             Interface.fill_gama([self.id],[p],[0],self.mode,[self.slices[p]],ILP)
+    
+    
+
+            
+################################################ Spectrum Management ###################################################################
+    def set_connection(self): # REF10
+        # It must be called after ILP decision
+        for i in range(0,len(self.get_links_candidates)):
+            for j in self.mode:
+                if i != self.path and j!= self.modulation:
+                    Interface.clean_lightpath(self.id,self.links_ref[i],j)
+    
+    def update_connection(self,traffic):# REF11
+        Interface.clean_lightpath(self.id,self.links_ref[self.path],self.modulation)
+        number_slots = [Interface.get_number_slots(traffic,m,self.net) for m in self.mode]
+        for i in self.mode:
+            template = Interface.get_template(self.links_ref[self.path], i)
+            end = Interface.test_allocation(template,number_slots[i])
+            aux = []
+            if end != -1:
+                start = end-number_slots[i]+1
+                aux.append([start,end+1])
+                self.set_slices_candidates(i,aux,self.links_ref[self.path])
+                break
+            
+    
+            
+    
+            
+        
+        
+        
+        
+        
+            
+            
             
 #########################################################################################################################
             

@@ -10,6 +10,7 @@ import Interface
 import simpy
 from Lightpath import lightpath
 from RMSA_ILP import rmsa_ilp
+'''
 
 def test_get_links():
     env = simpy.Environment()
@@ -175,3 +176,90 @@ def test_fill_gama():
     slice1.get_links_costs()
     slice1.set_ILP(ILP)
     print(ILP.gama)
+    
+def test_set_spectrum_01():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [40,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(ILP)
+    print(slice1.links_ref[0][0].control[0])
+    print(slice1.links_ref[0][0].control[1])
+'''
+    
+def test_set_spectrum_02():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0],ILP)
+  #  print(slice1.links_ref[0][0].control[0])
+  #  print(slice1.links_ref[0][0].control[1])
+
+def test_set_spectrum_update():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0],ILP)
+    ##
+    slice2.path = 0
+    slice2.modulation = 0
+    slice2.update_connection(100)
+    print(slice1.links_ref[0][0].control[0])
+    #print(slice1.links_ref[0][0].control[1])
+    

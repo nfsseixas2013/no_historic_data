@@ -11,7 +11,7 @@ import itertools as it
 import copy as c
 #from RMSA_ILP import rmsa_ilp
 
-##### Sorted links ########
+############################################# Sorted links candidates ########
 def get_nodes_candidates(net, source, destination):
    paths =  list(it.islice(nx.shortest_simple_paths(net.graph, source, destination), 3))
    links = []
@@ -127,8 +127,9 @@ def get_number_slots(need, modulacao, net): # need in Gbps
             return 1
         else:
             count = 1
-            while slot_size < need:
-                slot_size += slot_size
+            bandwidth = slot_size
+            while bandwidth <= need:
+                bandwidth += slot_size
                 count += 1
         return count
 
@@ -152,7 +153,7 @@ def get_template(links, modulation): # It receives a list of links(references) a
         for i in range(0, len(links[0].control[modulation])):# Every link.control has the same size.
             flag = 0
             for j in links:
-                if j.control[modulation][i][2] == 1:
+                if j.control[modulation][i][2] == 1: ## OR logic
                     resposta.append(1)
                     flag = 1
                     break
@@ -175,15 +176,28 @@ def test_allocation(template, slot_numbers):
         else:
             return -1
 
-def set_links_spectrum(links, end, slot_numbers, modulation, lightpath_id):### TO FIX
-        ranges = [x for x in range(end-slot_numbers+1, end+1)]
+    
+############################## Spectrum Management #####################################################
+def set_links_spectrum(links, slice_range, modulation, lightpath_id):
+        ranges = [x for x in range(slice_range[0][0], slice_range[0][1])]
         for i in ranges:
             for j in links:
                 j.control[modulation][i][2] = 1
                 j.control[modulation][i][0] = lightpath_id
-    
-###################################################################################
                 
+
+
+def clean_lightpath(lightpath_id, links, modulation):
+    for i in links:
+        for j in range(0, len(i.control[modulation][0])):
+            if i.control[modulation][j][0] == lightpath_id:
+                i.control[modulation][j][0] = 0
+                i.control[modulation][j][2] = 0    
+
+
+
+
+
 '''
 
 class interface:
