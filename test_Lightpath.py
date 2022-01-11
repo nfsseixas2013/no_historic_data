@@ -199,7 +199,7 @@ def test_set_spectrum_01():
     slice1.set_ILP(ILP)
     print(slice1.links_ref[0][0].control[0])
     print(slice1.links_ref[0][0].control[1])
-'''
+
     
 def test_set_spectrum_02():
     qtd_demanda = 2
@@ -220,13 +220,13 @@ def test_set_spectrum_02():
     slice1.get_links_candidates()
     slice1.get_links_ids()
     slice1.get_links_costs()
-    slice1.set_ILP(traffic[0],ILP)
+    slice1.set_ILP(traffic[0],100,ILP)
     #
     slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
     slice2.get_links_candidates()
     slice2.get_links_ids()
     slice2.get_links_costs()
-    slice2.set_ILP(traffic[0],ILP)
+    slice2.set_ILP(traffic[0],100,ILP)
   #  print(slice1.links_ref[0][0].control[0])
   #  print(slice1.links_ref[0][0].control[1])
 
@@ -249,17 +249,227 @@ def test_set_spectrum_update():
     slice1.get_links_candidates()
     slice1.get_links_ids()
     slice1.get_links_costs()
-    slice1.set_ILP(traffic[0],ILP)
+    slice1.set_ILP(traffic[0], 100,ILP)
     #
     slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
     slice2.get_links_candidates()
     slice2.get_links_ids()
     slice2.get_links_costs()
-    slice2.set_ILP(traffic[0],ILP)
+    slice2.set_ILP(traffic[0], 100,ILP)
     ##
     slice2.path = 0
     slice2.modulation = 0
     slice2.update_connection(100)
-    print(slice1.links_ref[0][0].control[0])
+  #  print(slice1.links_ref[0][0].control[0])
     #print(slice1.links_ref[0][0].control[1])
+'''
+
+def test_ldp():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],100,[50,200],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0], 200,[50,200],ILP)
+    ##
+    slice2.path = 0
+    slice2.modulation = 0
+    slice2.update_connection(100)
+    print(ILP.latencia)
+    print(ILP.ldp)
+
+def test_ILP_solver():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],100,[50,200],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0], 200,[50,200],ILP)
+    ##
+    slice2.path = 0
+    slice2.modulation = 0
+    slice2.update_connection(100)
+    print(ILP.latencia)
+    print(ILP.ldp)
+    ILP.solver()
+  
+def test_ILP_solver_conf():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],100,[50,200],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0], 200,[50,200],ILP)
+    ##
+    slice2.path = 0
+    slice2.modulation = 0
+    slice2.update_connection(100)
+    print(ILP.latencia)
+    print(ILP.ldp)
+    conf = ILP.solver()
+    print(conf)
+    
+
+def test_conf_lightpath():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],100,[50,200],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0], 200,[50,200],ILP)
+    ##
+    slice2.path = 0
+    slice2.modulation = 0
+    slice2.update_connection(100)
+    print(ILP.latencia)
+    print(ILP.ldp)
+    conf = ILP.solver()
+    print(conf)
+    Interface.setting_connections(conf,[slice1,slice2])
+    #print("path: {} modulation: {}".format(slice1.path, slice1.modulation))
+    print(slice2.links_ref[0][0].control[0])
+    print("\n")
+    print(slice2.links_ref[0][0].control[1])
+    
+def test_get_nodes():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.get_links_candidates()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice1.set_ILP(traffic[0],100,[50,200],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.get_links_candidates()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice2.set_ILP(traffic[0], 200,[50,200],ILP)
+    ##
+    conf = ILP.solver()
+    Interface.setting_connections(conf,[slice1,slice2])
+    slice1.get_nodes_chosen()
+    slice2.get_nodes_chosen()
+    print(slice1.nodes[0].id)
+    print(slice1.nodes[1].id)
+    print(slice2.nodes[0].id)
+    print(slice2.nodes[1].id)
+
+def test_set_lightpath():
+    qtd_demanda = 2
+    qtd_links = 4
+    qtd_path = 2
+    qtd_channel = 1
+    qtd_frequency_slot = 2
+    qtd_modulacao = 2
+    ILP = rmsa_ilp(qtd_demanda, qtd_links, qtd_path, qtd_channel, qtd_frequency_slot, qtd_modulacao)
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic = [10,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic,net)
+    slice1.set_ILP(traffic[0],100,[50,200],ILP)
+    #
+    slice2 = lightpath(env,1,[0,1],1,3,traffic,net)
+    slice2.set_ILP(traffic[0], 200,[50,200],ILP)
+    ##
+    conf = ILP.solver()
+    Interface.setting_connections(conf,[slice1,slice2])
+    slice1.set_lightpaths()
+    slice2.set_lightpaths()
+    print(slice1.nodes[0].id)
+    print(slice1.nodes[1].id)
+    print("###")
+    print(slice1.nodes[0].next_hopes[0][1].id)
     

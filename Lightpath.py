@@ -103,26 +103,30 @@ class lightpath:
         return slices
     
     
-    def set_ILP(self,traffic,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
+    def set_ILP(self,traffic,latencia,latencia_values,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
         self.get_links_candidates() # REF1
         self.get_links_refs() # REF4
         self.get_links_ids() # REF2
         self.get_links_costs()# REF3
         self.get_slices_indices(traffic) # REF8
+        ILP.latencia[self.id] = latencia
         for p in range(0,len(self.links_candidates)):
             Interface.fill_links(self.links_ids[p],[self.id],[p],ILP)
             Interface.fill_dpm([self.id],[p],self.mode,self.links_costs[p],ILP)
             Interface.fill_gama([self.id],[p],[0],self.mode,[self.slices[p]],ILP)
+            Interface.fill_latencies(self.id,p,latencia_values[p],ILP)
     
-    
-
-            
+    def set_conf(self,indice):
+        self.path = indice[1]
+        self.modulation = indice[3]
+        self.set_connection()
+        
 ################################################ Spectrum Management ###################################################################
     def set_connection(self): # REF10
         # It must be called after ILP decision
-        for i in range(0,len(self.get_links_candidates)):
+        for i in range(0,len(self.links_candidates)):
             for j in self.mode:
-                if i != self.path and j!= self.modulation:
+                if j!= self.modulation:
                     Interface.clean_lightpath(self.id,self.links_ref[i],j)
     
     def update_connection(self,traffic):# REF11
@@ -137,24 +141,22 @@ class lightpath:
                 aux.append([start,end+1])
                 self.set_slices_candidates(i,aux,self.links_ref[self.path])
                 break
+############################################ Setting UP ##########################################################################
+            
+    def get_nodes_chosen(self):
+        self.nodes = Interface.links2nodes(self.links_ref[self.path])
+    
+    def set_lightpaths(self):
+        self.get_nodes_chosen()
+        for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
+            self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
             
     
             
-    
-            
-        
-        
-        
-        
-        
-            
-            
-            
+
 #########################################################################################################################
             
-    def set_lightpaths(self):
-        for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
-            self.nodes[i].set_hopes([self.id, self.nodes[i+1]])          
+            
         
     
 ''' 
@@ -219,5 +221,5 @@ class lightpath:
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0]) 
-                
+       haha         
 '''             

@@ -83,12 +83,18 @@ class rmsa_ilp:
         self.set_constraint2()
         self.set_constraint3()
         solution = self.mdl.solve()
+        conf = []
         if solution != None:
             solution.display()
             S = solution.get_value_dict(self.Min)
             for i in S.keys():
                 if S[i] == 1:
                     print("Indice :{}".format(i))
+                    conf.append(i)
+            return conf
+                
+        else:
+            return None
         
 
     

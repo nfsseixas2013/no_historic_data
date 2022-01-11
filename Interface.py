@@ -78,8 +78,9 @@ def fill_dpm(d,p,m,custos, ILP):
                 ILP.set_dpm((d_,p_,m_),custos[contador])
                 contador += 1
                 
-def fill_latencies(latencias, ILP):
-    ILP.set_latencias(latencias)
+def fill_latencies(d,p,value, ILP):
+    ILP.set_ldp((d,p),value)
+    
     
 ############################## Parameters of ILP ##################################
     
@@ -189,11 +190,31 @@ def set_links_spectrum(links, slice_range, modulation, lightpath_id):
 
 def clean_lightpath(lightpath_id, links, modulation):
     for i in links:
-        for j in range(0, len(i.control[modulation][0])):
+        for j in range(0, len(i.control[0])):
             if i.control[modulation][j][0] == lightpath_id:
-                i.control[modulation][j][0] = 0
-                i.control[modulation][j][2] = 0    
+                i.control[modulation][j][0] = -1
+                i.control[modulation][j][2] = 0
 
+                
+                
+################################ Setting UP ############################################################
+
+def setting_connections(conf,lightpaths):
+    for i in lightpaths:
+        for j in conf:
+            if j[0] == i.id:
+                i.set_conf(j)
+                
+
+def links2nodes(links):
+    nodes = []
+    for i in links:
+        if i.nodes[0] not in nodes:
+            nodes.append(i.nodes[0])
+        if i.nodes[1] not in nodes:
+            nodes.append(i.nodes[1])
+    return nodes
+        
 
 
 

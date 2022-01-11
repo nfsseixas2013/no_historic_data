@@ -45,8 +45,12 @@ class network:
     def get_nodes(self, id1, id2):
         result = []
         for i in self.nodes:
-            if i.id == id1 or i.id == id2:
+            if i.id == id1:
                 result.append(i)
+        for i in self.nodes:
+            if i.id == id2:
+                result.append(i)
+        
         return result
     
     def create_links(self):
