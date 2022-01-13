@@ -129,7 +129,7 @@ def get_number_slots(need, modulacao, net): # need in Gbps
         else:
             count = 1
             bandwidth = slot_size
-            while bandwidth <= need:
+            while bandwidth < need:
                 bandwidth += slot_size
                 count += 1
         return count

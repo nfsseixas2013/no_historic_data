@@ -33,7 +33,8 @@ class lightpath:
         self.traffic_predicted = traffic[0] ## depois mudar isso
         self.path = 0 # defined by ILP solution
         self.modulation = 0 # defined by ILP solution
-       # self.env.process(self.run())
+        self.slots = []
+        self.env.process(self.run())
        
         
 ######## Preparations to get ILP parameters  ########################
@@ -87,6 +88,7 @@ class lightpath:
         ## This function returns the interval of slices candidates
         templates = self.get_templates() # REF6
         number_slots = self.get_slots_number(traffic) # REF5
+        self.slots = number_slots.copy()
         slices = []
         for i in templates:
             indice = 0
@@ -103,12 +105,13 @@ class lightpath:
         return slices
     
     
-    def set_ILP(self,traffic,latencia,latencia_values,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
+    def set_ILP(self,traffic,latencia,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
         self.get_links_candidates() # REF1
         self.get_links_refs() # REF4
         self.get_links_ids() # REF2
         self.get_links_costs()# REF3
         self.get_slices_indices(traffic) # REF8
+        latencia_values = self.calculate_latencies()
         ILP.latencia[self.id] = latencia
         for p in range(0,len(self.links_candidates)):
             Interface.fill_links(self.links_ids[p],[self.id],[p],ILP)
@@ -120,6 +123,18 @@ class lightpath:
         self.path = indice[1]
         self.modulation = indice[3]
         self.set_connection()
+        self.set_lightpaths()
+        
+        
+    def calculate_latencies(self):
+        latencias = []
+        for i in self.links_ref:
+            soma = 0
+            for j in i:
+                soma += j.cost
+            latencias.append(soma)
+        print(latencias)
+        return latencias
         
 ################################################ Spectrum Management ###################################################################
     def set_connection(self): # REF10
@@ -132,6 +147,7 @@ class lightpath:
     def update_connection(self,traffic):# REF11
         Interface.clean_lightpath(self.id,self.links_ref[self.path],self.modulation)
         number_slots = [Interface.get_number_slots(traffic,m,self.net) for m in self.mode]
+        self.slots = number_slots.copy()
         for i in self.mode:
             template = Interface.get_template(self.links_ref[self.path], i)
             end = Interface.test_allocation(template,number_slots[i])
@@ -140,7 +156,8 @@ class lightpath:
                 start = end-number_slots[i]+1
                 aux.append([start,end+1])
                 self.set_slices_candidates(i,aux,self.links_ref[self.path])
-                break
+                return True
+        return False
 ############################################ Setting UP ##########################################################################
             
     def get_nodes_chosen(self):
@@ -151,13 +168,41 @@ class lightpath:
         for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
             self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
             
+################################################ TRAFFIC #########################################################################
     
-            
-
-#########################################################################################################################
-            
-            
+    def run(self):
+        if type(self.traffic) == list:
+             # Modelling of traffic
+            for i in self.traffic:
+                contador = 0
+                while contador <  600: # 10 minutes
+                    traffic = np.random.poisson(i,1)[0]
+                    self.sending_traffic(traffic)
+                    yield self.env.timeout(1)
+                    contador += 1
+        else:
+            while True: # # Using poisson to model the traffic
+               self.sending_traffic(np.random.poisson(self.traffic,1)[0])
+               
+               
+    def sending_traffic(self, traffic):
+        slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
+        if self.slots[self.modulation] - slots_needed != 0:
+            if (self.update_connection(traffic)):
+                self.env.process(self.sending(traffic))
+            else:
+                self.report.append([self.env.now, 0])
+        else:
+            self.env.process(self.sending(traffic))
         
+    def sending(self,load): # Modularization of sending of one msg
+        msg = [self.env.now,"bytes", self.id, load] # Setting msg
+        self.nodes[0].connection.put(msg) # Putting the msg in the store of the nodes
+        self.nodes[0].env.process(self.nodes[0].forwarding_msg(msg)) ## Formarding not receive # Lightpath just send.
+        self.report.append([self.env.now, load]) # Reporting
+        yield self.env.timeout(self.links_ref[self.path][0].cost) # getting the cost of the transmission
+    
+    
     
 ''' 
     def get_nodes(self): # It receives (1,2), (2,3) -> [1,2,2,3] -> [1,2,3] * Nodes references
