@@ -148,15 +148,14 @@ class lightpath:
         Interface.clean_lightpath(self.id,self.links_ref[self.path],self.modulation)
         number_slots = [Interface.get_number_slots(traffic,m,self.net) for m in self.mode]
         self.slots = number_slots.copy()
-        for i in self.mode:
-            template = Interface.get_template(self.links_ref[self.path], i)
-            end = Interface.test_allocation(template,number_slots[i])
-            aux = []
-            if end != -1:
-                start = end-number_slots[i]+1
-                aux.append([start,end+1])
-                self.set_slices_candidates(i,aux,self.links_ref[self.path])
-                return True
+        template = Interface.get_template(self.links_ref[self.path], self.modulation)
+        end = Interface.test_allocation(template,number_slots[self.modulation])
+        aux = []
+        if end != -1:
+            start = end-number_slots[self.modulation]+1
+            aux.append([start,end+1])
+            self.set_slices_candidates(self.modulation,aux,self.links_ref[self.path])
+            return True
         return False
 ############################################ Setting UP ##########################################################################
             
