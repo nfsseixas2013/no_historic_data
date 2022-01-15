@@ -12,6 +12,7 @@ class link:
         self.size = frequency_slot_size_cod
         self.id = id_cod
         self.control = [[],[]]
+        self.shadow = [[],[]]
         
         if frequency_slot_size_cod == 0: # 0 for 5GHz, 1 for 6.25 GHz and 2 for 12.5GHz
             self.control[0] = [[-1,0,0] for x in range (0, 800) ]
@@ -22,6 +23,18 @@ class link:
         else:
             self.control[0] = [[-1,0,0] for x in range (0, 320) ] # [lightpath_id, modulation, control]
             self.control[1] = [[-1,1,0] for x in range (0, 320) ]
+            
+        if frequency_slot_size_cod == 0: # 0 for 5GHz, 1 for 6.25 GHz and 2 for 12.5GHz
+            self.shadow[0] = [[-1,0,0] for x in range (0, 800) ]
+            self.shadow[1] = [[-1,1,0] for x in range (0, 800) ]
+        elif frequency_slot_size_cod == 1:
+            self.shadow[0] = [[-1,0,0] for x in range (0, 640) ]
+            self.shadow[1] = [[-1,1,0] for x in range (0, 640) ]
+        else:
+            self.shadow[0] = [[-1,0,0] for x in range (0, 320) ] # [lightpath_id, modulation, control]
+            self.shadow[1] = [[-1,1,0] for x in range (0, 320) ]
+        
+        
    #     self.env = env
         self.traffic = []
         self.cost = cost * 0.000005 # 5 microsseconds per km 

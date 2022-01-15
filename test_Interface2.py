@@ -5,7 +5,7 @@ import simpy
 from RMSA_ILP import rmsa_ilp
 from Lightpath import lightpath
 
-
+'''
 def test_get_candidates():
     env = simpy.Environment()
     topologia = [(1,2,10),(2,3,10), (3,4,10), (4,5,10)]
@@ -136,5 +136,43 @@ def test_allocation():
     links = Interface.get_links_ref_list(slice1.links_candidates,net)
     template = Interface.get_template(links[0],0)
     print(Interface.test_allocation(template,Interface.get_number_slots(60,0,net)))
+'''    
+
+def test_get_template():
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic1 = [60,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
+    slice1.get_links_candidates()
+    slice1.get_links_refs()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    template = slice1.get_templates()
+    for i in template:
+        print(i.template[0][1])
+                       #      # link
+        print("\n \n \n")
     
 
+
+def test_get_template2():
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 0
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic1 = [60,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
+    slice1.get_links_candidates()
+    slice1.get_links_refs()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slices = slice1.get_slices_indices(100)
+    print(slice1.links_ref[0][0].shadow[1])
+    print("\n \n ******** \n ")
+    print(slices)

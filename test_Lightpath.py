@@ -559,6 +559,6 @@ def test_run():
     #### Setting confs ####
     conf = ILP.solver()
     Interface.setting_connections(conf,[slice1,slice2])
-    env.run(until = 10)
+   # env.run(until = 10)
     
     

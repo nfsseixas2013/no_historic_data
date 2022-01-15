@@ -8,6 +8,7 @@ Created on Wed Oct  6 20:08:21 2021
 
 import numpy as np
 import Interface
+from Template import template
 
 class lightpath:
     
@@ -69,41 +70,56 @@ class lightpath:
         return number_slots
         
     def get_templates(self): # REF6
-        templates = []
+        resultado = []
         for i in self.links_ref:
             aux = []
+            aux2 = []
             for j in self.mode:
                 aux.append([Interface.get_template(i,j),i])# Creating a reference for links and templates
-            templates.append(aux)
-        return templates # Templates per modulation and per path
+                aux2.append([Interface.get_template(i,j),i])
+            resultado.append(template(aux,aux2))  
+        return resultado # Templates per modulation and per path
     
 
-    def set_slices_candidates(self, modulation,slice_range,links): # REF7
+    def set_slices_candidates(self, modulation,slice_range,links,flag): # REF7
         #The purpose is control what range will be picked as slices candidates to different modulations
-       ## In this case, modulation will be the index of templates at get_slices_indices 
-       Interface.set_links_spectrum(links,slice_range,modulation,self.id)
+       ## In this case, modulation will be the index of templates at get_slices_indices
+       print(slice_range)
+       if flag == False:
+           Interface.set_links_spectrum(links,slice_range,modulation,self.id)
+          # print(links[0].control[modulation])
+       else:
+           Interface.set_links_spectrum_shadow(links,slice_range,modulation,self.id)
     
-    
-    def get_slices_indices(self,traffic): # REF8 -> REF5,REF6,REF7
+
+    def get_slices_indices(self,traffic): # 
         ## This function returns the interval of slices candidates
-        templates = self.get_templates() # REF6
+        estrutura = self.get_templates() # REF6
         number_slots = self.get_slots_number(traffic) # REF5
         self.slots = number_slots.copy()
         slices = []
-        for i in templates:
+        for i in estrutura:
             indice = 0
+            flag = False
             aux = []
-            for j in i:
-               end = Interface.test_allocation(j[0],number_slots[indice])
-               start = end-number_slots[indice]+1
-               aux.append([start,end+1])
-               ## Call here the set_slices_candidates
-               self.set_slices_candidates(indice,aux,j[1])# REF7
-               indice += 1
+            for a in range(0, len(self.mode)):
+                end = Interface.test_allocation(i.template[a][0],number_slots[indice])
+                if end == -1:
+                    end = Interface.test_allocation(i.shadow[a][0],number_slots[indice])
+                    flag = True
+                start = end-number_slots[indice]+1
+                aux.append([start,end+1])
+                ## Call here the set_slices_candidates
+                if flag == False:
+                    self.set_slices_candidates(a,aux[a],i.template[a][1],flag)# É a mesma referencia
+                else:
+                    self.set_slices_candidates(a,aux[a],i.shadow[a][1],flag)
+                indice += 1
             slices.append(aux)
         self.slices = slices
         return slices
-    
+        
+            
     
     def set_ILP(self,traffic,latencia,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
         self.get_links_candidates() # REF1
