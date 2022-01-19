@@ -228,6 +228,12 @@ def setting_connections(conf,lightpaths):
         for j in conf:
             if j[0] == i.id:
                 i.set_conf(j)
+
+def setting_connections_update(conf,lightpaths):
+    for i in lightpaths:
+        for j in conf:
+            if j[0] == i.id:
+                i.set_conf_update(j)
                 
 
 def links2nodes(links):

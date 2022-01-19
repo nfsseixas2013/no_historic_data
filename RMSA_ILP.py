@@ -96,7 +96,10 @@ class rmsa_ilp:
         else:
             return None
         
-
-    
+    def reset_ILP(self):
+        self.inicia_sigma()
+        self.inicia_gama()
+        self.inicia_dpm()
+        self.inicia_ldp()
         
                     

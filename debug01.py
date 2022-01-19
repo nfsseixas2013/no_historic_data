@@ -11,6 +11,33 @@ import Interface
 import simpy
 from RMSA_ILP import rmsa_ilp
 from Lightpath import lightpath
+import pandas as pd
+
+
+class control:
+    def __init__(self,env,lightpaths,ILP,net):
+        self.env = env
+        self.lightpaths = lightpaths
+        self.ilp = ILP
+        self.net = net
+        self.env.process(self.run())
+        
+    def run(self):
+        while True:
+            if self.env.now == 600:
+                self.ilp.reset_ILP()
+                for i in self.net.links:
+                    i.reset_control()
+                print(self.ilp.gama)
+                print("\n")
+                for i in self.lightpaths:
+                    i.set_ILP_update(60,i.latencia_required,self.ilp)
+                print(self.ilp.gama)
+                conf = self.ilp.solver()
+                Interface.setting_connections_update(conf,self.lightpaths)               
+            yield self.env.timeout(1)
+        
+        
 
 
 def test_run():
@@ -30,8 +57,8 @@ def test_run():
     frequency_slot = 3
     net = network(topologia,switches,actors,frequency_slot,env)
     ##### Setting lightpaths ######
-    traffic1 = [60,10]
-    traffic2 = [60,10]
+    traffic1 = [10,60]
+    traffic2 = [10,60]
     slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
     slice1.set_ILP(traffic1[0],0.0001,ILP)
     ##
@@ -42,6 +69,22 @@ def test_run():
     #print(conf)
     Interface.setting_connections(conf,[slice1,slice2])
     #print(net.links[3].control[0])
-    env.run(until = 600)
-    
+    c = control(env,[slice1,slice2],ILP,net)
+    env.run(until = 1200)
+    #print(net.links[0].traffic)
+    tempo = [x[0] for x in slice1.report]
+    traffic = [x[1] for x in slice1.report]
+    dataset = pd.DataFrame({'tempo':tempo, 'traffic':traffic})
+    dataset.to_csv("datatraffic.csv")
+    tempo = [x[0] for x in slice2.report]
+    traffic = [x[1] for x in slice2.report]
+    dataset = pd.DataFrame({'tempo':tempo, 'traffic':traffic})
+    dataset.to_csv("datatraffic2.csv")
 test_run()
+
+
+
+
+
+
+
