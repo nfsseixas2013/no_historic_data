@@ -76,7 +76,7 @@ class lightpath:
             aux2 = []
             for j in self.mode:
                 aux.append([Interface.get_template(i,j),i])# Creating a reference for links and templates
-                aux2.append([Interface.get_template(i,j),i])
+                aux2.append([Interface.get_template_shadow(i,j),i])
             resultado.append(template(aux,aux2))  
         return resultado # Templates per modulation and per path
     
@@ -84,15 +84,13 @@ class lightpath:
     def set_slices_candidates(self, modulation,slice_range,links,flag): # REF7
         #The purpose is control what range will be picked as slices candidates to different modulations
        ## In this case, modulation will be the index of templates at get_slices_indices
-       print(slice_range)
        if flag == False:
            Interface.set_links_spectrum(links,slice_range,modulation,self.id)
-          # print(links[0].control[modulation])
        else:
            Interface.set_links_spectrum_shadow(links,slice_range,modulation,self.id)
     
 
-    def get_slices_indices(self,traffic): # 
+    def get_slices_indices(self,traffic): #
         ## This function returns the interval of slices candidates
         estrutura = self.get_templates() # REF6
         number_slots = self.get_slots_number(traffic) # REF5
@@ -100,9 +98,9 @@ class lightpath:
         slices = []
         for i in estrutura:
             indice = 0
-            flag = False
             aux = []
             for a in range(0, len(self.mode)):
+                flag = False
                 end = Interface.test_allocation(i.template[a][0],number_slots[indice])
                 if end == -1:
                     end = Interface.test_allocation(i.shadow[a][0],number_slots[indice])
@@ -111,7 +109,7 @@ class lightpath:
                 aux.append([start,end+1])
                 ## Call here the set_slices_candidates
                 if flag == False:
-                    self.set_slices_candidates(a,aux[a],i.template[a][1],flag)# É a mesma referencia
+                    self.set_slices_candidates(a,aux[a],i.template[a][1],flag)
                 else:
                     self.set_slices_candidates(a,aux[a],i.shadow[a][1],flag)
                 indice += 1
@@ -149,12 +147,21 @@ class lightpath:
             for j in i:
                 soma += j.cost
             latencias.append(soma)
-        print(latencias)
         return latencias
         
 ################################################ Spectrum Management ###################################################################
+    
+    def verify(self):
+        intervalo = [x for x in range(0,len(self.links_ref[self.path][0].shadow[0]))]
+        for i in intervalo:
+            for j in self.links_ref[self.path]:
+                if j.shadow[self.modulation][i][0] == self.id:
+                    j.control[self.modulation][i][0] = self.id
+            
+    
     def set_connection(self): # REF10
         # It must be called after ILP decision
+        self.verify()
         for i in range(0,len(self.links_candidates)):
             for j in self.mode:
                 if j!= self.modulation:
@@ -170,7 +177,7 @@ class lightpath:
         if end != -1:
             start = end-number_slots[self.modulation]+1
             aux.append([start,end+1])
-            self.set_slices_candidates(self.modulation,aux,self.links_ref[self.path])
+            self.set_slices_candidates(self.modulation,aux[0],self.links_ref[self.path],False)# This false is to link.control always.
             return True
         return False
 ############################################ Setting UP ##########################################################################

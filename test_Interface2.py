@@ -173,6 +173,31 @@ def test_get_template2():
     slice1.get_links_ids()
     slice1.get_links_costs()
     slices = slice1.get_slices_indices(100)
-    print(slice1.links_ref[0][0].shadow[1])
+    print(slice1.links_ref[0][0].control[0])
     print("\n \n ******** \n ")
     print(slices)
+    
+def test_get_template3():
+    env = simpy.Environment()
+    topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
+    switches = [2,4]
+    actors = [1,3]
+    frequency_slot = 3
+    net = network(topologia,switches,actors,frequency_slot,env)
+    traffic1 = [60,10,10,10]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
+    slice1.get_links_candidates()
+    slice1.get_links_refs()
+    slice1.get_links_ids()
+    slice1.get_links_costs()
+    slice2 = lightpath(env,1,[0,1],1,3,traffic1,net)
+    slice2.get_links_candidates()
+    slice2.get_links_refs()
+    slice2.get_links_ids()
+    slice2.get_links_costs()
+    slice1.get_slices_indices(60)
+    slice2.get_slices_indices(60)
+    print("Control: \n")
+    print(slice2.links_ref[0][0].control[1])
+    print("\n \n ******** \n ")
+    print(slice2.links_ref[0][0].shadow[1])

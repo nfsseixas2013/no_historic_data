@@ -20,9 +20,12 @@ class link:
         elif frequency_slot_size_cod == 1:
             self.control[0] = [[-1,0,0] for x in range (0, 640) ]
             self.control[1] = [[-1,1,0] for x in range (0, 640) ]
-        else:
+        elif frequency_slot_size_cod == 2:
             self.control[0] = [[-1,0,0] for x in range (0, 320) ] # [lightpath_id, modulation, control]
             self.control[1] = [[-1,1,0] for x in range (0, 320) ]
+        else:
+            self.control[0] = [[-1,0,0] for x in range (0, 2) ] # [lightpath_id, modulation, control]
+            self.control[1] = [[-1,1,0] for x in range (0, 2) ]
             
         if frequency_slot_size_cod == 0: # 0 for 5GHz, 1 for 6.25 GHz and 2 for 12.5GHz
             self.shadow[0] = [[-1,0,0] for x in range (0, 800) ]
@@ -30,9 +33,12 @@ class link:
         elif frequency_slot_size_cod == 1:
             self.shadow[0] = [[-1,0,0] for x in range (0, 640) ]
             self.shadow[1] = [[-1,1,0] for x in range (0, 640) ]
-        else:
+        elif frequency_slot_size_cod == 2:
             self.shadow[0] = [[-1,0,0] for x in range (0, 320) ] # [lightpath_id, modulation, control]
             self.shadow[1] = [[-1,1,0] for x in range (0, 320) ]
+        else:
+            self.shadow[0] = [[-1,0,0] for x in range (0, 2) ] # [lightpath_id, modulation, control]
+            self.shadow[1] = [[-1,1,0] for x in range (0, 2) ]
         
         
    #     self.env = env

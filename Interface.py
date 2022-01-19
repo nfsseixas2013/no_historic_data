@@ -107,21 +107,21 @@ def get_cost(links,modulation,net):# Only for test. Shall be changed
 def get_number_slots(need, modulacao, net): # need in Gbps
         # This method returns the number of slots needed to establish the lightpath.
         slot_type = net.links[0].size # The size is equal to everyone
-        
         if modulacao == 1:
-            if slot_type == 0: # 5GHZ
+            if slot_type == 0 or slot_type == 3: # 5GHZ
                 slot_size = 40
             elif slot_type == 1: # 6.25GHZ
                 slot_size = 48
             else:
                 slot_size = 100 # 12.5 GHZ
         else:
-            if slot_type == 0:
+            if slot_type == 0 or slot_type == 3:
                 slot_size = 30
             elif slot_type == 1:
                 slot_size = 36
             else:
                 slot_size = 75
+           
         
         # Once set the slot  size, we proceed with the calculation
         if slot_size >= need:
@@ -179,7 +179,6 @@ def get_template_shadow(links, modulation): # It receives a list of links(refere
 def test_allocation(template, slot_numbers):
         # This method verifies if the the template has the necessary number of frequency slots to hold the requisition
         counter = 0
-       # print(template)
         for i in range(0, len(template)):
             if template[i] == 0:
                 counter += 1
@@ -200,6 +199,7 @@ def set_links_spectrum(links, slice_range, modulation, lightpath_id):
             for j in links:
                 j.control[modulation][i][2] = 1
                 j.control[modulation][i][0] = lightpath_id
+        
 
                 
 def set_links_spectrum_shadow(links, slice_range, modulation, lightpath_id):
@@ -208,6 +208,7 @@ def set_links_spectrum_shadow(links, slice_range, modulation, lightpath_id):
             for j in links:
                 j.shadow[modulation][i][2] = 1
                 j.shadow[modulation][i][0] = lightpath_id
+
                 
 
 

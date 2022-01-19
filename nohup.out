@@ -1,0 +1,6 @@
+2022-01-18 11:12:45,646 - WARNING linux_scaling.get_primary_monitor_name:59
+Can't detect primary monitor.
+
+2022-01-18 11:43:36,328 - WARNING linux_scaling.get_primary_monitor_name:59
+Can't detect primary monitor.
+

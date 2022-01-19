@@ -503,7 +503,7 @@ def test_set_lightpath2():
     conf = ILP.solver()
     print(conf)
     
-'''
+
 
 def test_set_lightpath2():
     qtd_demanda = 2
@@ -531,7 +531,7 @@ def test_set_lightpath2():
     ##
     conf = ILP.solver()
     print(conf)
-    
+'''    
 def test_run():
     ## ILP ##
     qtd_demanda = 2
@@ -546,11 +546,11 @@ def test_run():
     topologia = [(1,2,5),(2,3,6),(1,4,7),(4,3,8)]
     switches = [2,4]
     actors = [1,3]
-    frequency_slot = 0
+    frequency_slot = 3
     net = network(topologia,switches,actors,frequency_slot,env)
     ##### Setting lightpaths ######
-    traffic1 = [60,10,10,10]
-    traffic2 = [10,10,10,10]
+    traffic1 = [60,10]
+    traffic2 = [60,10]
     slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
     slice1.set_ILP(traffic1[0],100,ILP)
     ##
@@ -558,7 +558,9 @@ def test_run():
     slice2.set_ILP(traffic2[0], 200,ILP)
     #### Setting confs ####
     conf = ILP.solver()
+    #print(conf)
     Interface.setting_connections(conf,[slice1,slice2])
-   # env.run(until = 10)
+    #print(net.links[3].control[0])
+    env.run(until = 10)
     
     
