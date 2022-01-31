@@ -6,6 +6,9 @@ Created on Tue Jan 18 12:04:54 2022
 @author: nilton
 """
 
+import sys
+sys.path.append("../")
+
 from Network import network
 import Interface
 import simpy
@@ -21,20 +24,24 @@ class control:
         self.ilp = ILP
         self.net = net
         self.env.process(self.run())
-        
+     
+    def interruption(self):
+       self.ilp.reset_ILP()
+       for i in self.net.links:
+           i.reset_control()
+       for i in self.lightpaths:
+           i.set_ILP_update(60,i.latencia_required,self.ilp)
+       conf = self.ilp.solver()
+       Interface.setting_connections_update(conf,self.lightpaths)
+
+    
     def run(self):
         while True:
             if self.env.now == 600:
-                self.ilp.reset_ILP()
-                for i in self.net.links:
-                    i.reset_control()
-                print(self.ilp.gama)
-                print("\n")
                 for i in self.lightpaths:
-                    i.set_ILP_update(60,i.latencia_required,self.ilp)
-                print(self.ilp.gama)
-                conf = self.ilp.solver()
-                Interface.setting_connections_update(conf,self.lightpaths)               
+                    i.action.interrupt()
+                yield self.env.timeout(0.0002)
+                self.interruption()
             yield self.env.timeout(1)
         
         
@@ -57,8 +64,8 @@ def test_run():
     frequency_slot = 3
     net = network(topologia,switches,actors,frequency_slot,env)
     ##### Setting lightpaths ######
-    traffic1 = [10,60]
-    traffic2 = [10,60]
+    traffic1 = [10,40]
+    traffic2 = [10,40]
     slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
     slice1.set_ILP(traffic1[0],0.0001,ILP)
     ##

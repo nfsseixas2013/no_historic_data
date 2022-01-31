@@ -9,6 +9,7 @@ Created on Wed Oct  6 20:08:21 2021
 import numpy as np
 import Interface
 from Template import template
+import simpy
 
 class lightpath:
     
@@ -36,7 +37,8 @@ class lightpath:
         self.modulation = 0 # defined by ILP solution
         self.slots = []
         self.latencia_required = 0
-        self.env.process(self.run())
+	# Interruption
+        self.action = self.env.process(self.run())
        
         
 ######## Preparations to get ILP parameters  ########################
@@ -81,7 +83,6 @@ class lightpath:
             resultado.append(template(aux,aux2))  
         return resultado # Templates per modulation and per path
     
-
     def set_slices_candidates(self, modulation,slice_range,links,flag): # REF7
         #The purpose is control what range will be picked as slices candidates to different modulations
        ## In this case, modulation will be the index of templates at get_slices_indices
@@ -90,7 +91,6 @@ class lightpath:
        else:
            Interface.set_links_spectrum_shadow(links,slice_range,modulation,self.id)
     
-
     def get_slices_indices(self,traffic): #
         ## This function returns the interval of slices candidates
         estrutura = self.get_templates() # REF6
@@ -118,8 +118,6 @@ class lightpath:
         self.slices = slices
         return slices
         
-            
-    
     def set_ILP(self,traffic,latencia,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
         self.get_links_candidates() # REF1
         self.get_links_refs() # REF4
@@ -135,7 +133,6 @@ class lightpath:
             Interface.fill_gama([self.id],[p],[0],self.mode,[self.slices[p]],ILP)
             Interface.fill_latencies(self.id,p,latencia_values[p],ILP)
             
-    
     def set_ILP_update(self,traffic,latencia,ILP):
         latencia_values = self.calculate_latencies()
         self.get_slices_indices(traffic)
@@ -144,9 +141,7 @@ class lightpath:
             Interface.fill_dpm([self.id],[p],self.mode,self.links_costs[p],ILP)
             Interface.fill_gama([self.id],[p],[0],self.mode,[self.slices[p]],ILP)
             Interface.fill_latencies(self.id,p,latencia_values[p],ILP)
-    
-    
-    
+  
     def set_conf(self,indice):
         self.path = indice[1]
         self.modulation = indice[3]
@@ -228,14 +223,17 @@ class lightpath:
                 contador = 0
                 while contador <  600: # 10 minutes
                     traffic = np.random.poisson(i,1)[0]
-                    self.sending_traffic(traffic)
-                    yield self.env.timeout(1)
+                    try:
+                        self.sending_traffic(traffic)
+                        yield self.env.timeout(1)
+                    except simpy.Interrupt:
+                        contador =-1
+
                     contador += 1
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0])
-               
-               
+                     
     def sending_traffic(self, traffic):
         slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
         if self.slots[self.modulation] - slots_needed != 0:
