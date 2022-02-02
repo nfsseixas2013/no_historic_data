@@ -10,10 +10,10 @@ import numpy as np
 import Interface
 from Template import template
 import simpy
-
+from IA.IA import IA
 class lightpath:
     
-    def __init__(self, env, cod, mode, source, destination, traffic, net):
+    def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA):
         self.id = cod
         self.nodes = []
         self.mode = mode
@@ -37,6 +37,9 @@ class lightpath:
         self.modulation = 0 # defined by ILP solution
         self.slots = []
         self.latencia_required = 0
+        self.IA = IA
+        self.metric = metric
+        self.service_type = service_type
 	# Interruption
         self.action = self.env.process(self.run())
        
@@ -216,7 +219,24 @@ class lightpath:
             
 ################################################ TRAFFIC #########################################################################
     
+    def setup_predictions(self, input_list):
+        if len(input_list) == 2:
+            if self.service_type == 'eMBB':
+                prediction = self.IA.predict_eMBB(input_list)
+            else:
+                prediction = self.IA.predict_UR_mM(input_list)
+                self.update_connection(prediction)
+                print("\n *********** \n")
+                print("id = {}, prediction: {}".format(self.id, prediction))
+                return input_list.pop(0)
+        self.update_connection(input_list[0])
+        return input_list
+
+            
+    
     def run(self):
+        interval_data = []
+        input_data_IA = []
         if type(self.traffic) == list:
              # Modelling of traffic
             for i in self.traffic:
@@ -225,23 +245,28 @@ class lightpath:
                     traffic = np.random.poisson(i,1)[0]
                     try:
                         self.sending_traffic(traffic)
+                        interval_data.append(traffic)
                         yield self.env.timeout(1)
                     except simpy.Interrupt:
                         contador =-1
-
                     contador += 1
+                if self.metric == 'median':
+                    input_data_IA.append(np.median(interval_data))
+                elif self.metric == 'quantile3':
+                    input_data_IA.append(np.quantile(interval_data,0.75))
+                else:
+                    input_data_IA.append(np.amax(interval_data))
+                input_data_IA = self.setup_predictions(input_data_IA)
+                interval_data.clear()
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0])
                      
     def sending_traffic(self, traffic):
         slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
-        if self.slots[self.modulation] - slots_needed != 0:
-            if (self.update_connection(traffic)):
-                self.env.process(self.sending(traffic))
-            else:
-                self.report.append([self.env.now, 0])
-                self.traffic_predicted = 0
+        if self.slots[self.modulation] - slots_needed < 0:
+            self.report.append([self.env.now, 0])
+            self.traffic_predicted = 0
         else:
             self.env.process(self.sending(traffic))
         

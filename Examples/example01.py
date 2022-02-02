@@ -8,6 +8,7 @@ Created on Tue Jan 18 12:04:54 2022
 
 import sys
 sys.path.append("../")
+sys.path.append("../IA")
 
 from Network import network
 import Interface
@@ -15,6 +16,7 @@ import simpy
 from RMSA_ILP import rmsa_ilp
 from Lightpath import lightpath
 import pandas as pd
+from IA.IA import IA
 
 
 class control:
@@ -63,21 +65,23 @@ def test_run():
     actors = [1,3]
     frequency_slot = 3
     net = network(topologia,switches,actors,frequency_slot,env)
+    ## Setting IA module ##
+    brain = IA()
     ##### Setting lightpaths ######
-    traffic1 = [10,40]
-    traffic2 = [10,40]
-    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net)
+    traffic1 = [10,20,40]
+    traffic2 = [10,20,40]
+    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net,'URLLC','max', brain)
     slice1.set_ILP(traffic1[0],0.0001,ILP)
     ##
-    slice2 = lightpath(env,1,[0,1],1,3,traffic2,net)
+    slice2 = lightpath(env,1,[0,1],1,3,traffic2,net,'URLLC','max',brain)
     slice2.set_ILP(traffic2[0],0.0002,ILP)
     #### Setting confs ####
     conf = ILP.solver()
     #print(conf)
     Interface.setting_connections(conf,[slice1,slice2])
     #print(net.links[3].control[0])
-    c = control(env,[slice1,slice2],ILP,net)
-    env.run(until = 1200)
+    #c = control(env,[slice1,slice2],ILP,net)
+    env.run(until = 1800)
     #print(net.links[0].traffic)
     tempo = [x[0] for x in slice1.report]
     traffic = [x[1] for x in slice1.report]
