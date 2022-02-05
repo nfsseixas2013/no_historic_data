@@ -226,8 +226,6 @@ class lightpath:
             else:
                 prediction = self.IA.predict_UR_mM(input_list)
                 self.update_connection(prediction)
-                print("\n *********** \n")
-                print("id = {}, prediction: {}".format(self.id, prediction))
                 return input_list.pop(0)
         self.update_connection(input_list[0])
         return input_list
