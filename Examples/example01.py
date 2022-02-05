@@ -17,8 +17,10 @@ from RMSA_ILP import rmsa_ilp
 from Lightpath import lightpath
 import pandas as pd
 from IA.IA import IA
+from Control import control
 
 
+'''
 class control:
     def __init__(self,env,lightpaths,ILP,net):
         self.env = env
@@ -46,7 +48,7 @@ class control:
                 self.interruption()
             yield self.env.timeout(1)
         
-        
+'''        
 
 
 def test_run():
@@ -69,14 +71,16 @@ def test_run():
 
     ## Setting IA module ##
     brain = IA()
-
+    
+    ## Setting controller
+    controller = control(env)
     ##### Setting lightpaths ######
     traffic1 = [10,20,40]
     traffic2 = [10,20,40]
-    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net,'URLLC','max', brain)
+    slice1 = lightpath(env,0,[0,1],1,3,traffic1,net,'URLLC','max', brain,controller)
     slice1.set_ILP(traffic1[0],0.0001,ILP)
     ##
-    slice2 = lightpath(env,1,[0,1],1,3,traffic2,net,'URLLC','max',brain)
+    slice2 = lightpath(env,1,[0,1],1,3,traffic2,net,'URLLC','max',brain,controller)
     slice2.set_ILP(traffic2[0],0.0002,ILP)
 
     #### Setting confs ####

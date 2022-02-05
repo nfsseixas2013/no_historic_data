@@ -13,7 +13,7 @@ import simpy
 from IA.IA import IA
 class lightpath:
     
-    def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA):
+    def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA, controller):
         self.id = cod
         self.nodes = []
         self.mode = mode
@@ -40,6 +40,8 @@ class lightpath:
         self.IA = IA
         self.metric = metric
         self.service_type = service_type
+        self.ia_data_input = []
+        controller.set_lightpaths(self)
 	# Interruption
         self.action = self.env.process(self.run())
        
@@ -219,26 +221,26 @@ class lightpath:
             
 ################################################ TRAFFIC #########################################################################
     
-    def setup_predictions(self, input_list):
-        if len(input_list) == 2:
+    def setup_predictions(self):
+        flag = False
+        if len(self.ia_data_input) == 2:
             if self.service_type == 'eMBB':
-                prediction = self.IA.predict_eMBB(input_list)
+                prediction = self.IA.predict_eMBB(self.ia_data_input)
             else:
-                prediction = self.IA.predict_UR_mM(input_list)
-                self.update_connection(prediction)
-                return input_list.pop(0)
-        self.update_connection(input_list[0])
-        return input_list
-
-            
-    
+                prediction = self.IA.predict_UR_mM(self.ia_data_input)
+            print("\n lightpath: {} - Predição: {} \n".format(self.id,prediction))
+            flag = self.update_connection(prediction)
+            self.ia_data_input.pop(0) 
+        else:
+            flag = self.update_connection(self.ia_data_input[0])
+        return flag
+        
     def run(self):
-        interval_data = []
-        input_data_IA = []
         if type(self.traffic) == list:
              # Modelling of traffic
             for i in self.traffic:
                 contador = 0
+                interval_data = []
                 while contador <  600: # 10 minutes
                     traffic = np.random.poisson(i,1)[0]
                     try:
@@ -249,13 +251,13 @@ class lightpath:
                         contador =-1
                     contador += 1
                 if self.metric == 'median':
-                    input_data_IA.append(np.median(interval_data))
+                    self.ia_data_input.append(np.median(interval_data))
                 elif self.metric == 'quantile3':
-                    input_data_IA.append(np.quantile(interval_data,0.75))
+                    self.ia_data_input.append(np.quantile(interval_data,0.75))
                 else:
-                    input_data_IA.append(np.amax(interval_data))
-                input_data_IA = self.setup_predictions(input_data_IA)
-                interval_data.clear()
+                    self.ia_data_input.append(np.amax(interval_data))
+                #input_data_IA = self.setup_predictions(input_data_IA)
+                
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0])
