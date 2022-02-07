@@ -12,22 +12,22 @@ import numpy as np
 class IA:
     def __init__(self):
         ## Loading model and weights of eMBB
-        file = open('/home/nilton/EON_SIMULATOR/IA/eMBB_brain.json', 'r')
+        file = open('../IA/eMBB_brain.json', 'r')
         self.eMBB_model = model_from_json(file.read())
         file.close()
-        self.eMBB_model.load_weights('/home/nilton/EON_SIMULATOR/IA/eMBB_brain_pesos.h5')
+        self.eMBB_model.load_weights('../IA/eMBB_brain_pesos.h5')
         # Loading scaler of eMBB
-        self.eMBB_scaler = joblib.load('/home/nilton/EON_SIMULATOR/IA/eMBB_normalizer.save')
+        self.eMBB_scaler = joblib.load('../IA/eMBB_normalizer.save')
         # Compiling the model
         self.eMBB_model.compile(optimizer = 'rmsprop', loss = 'mean_squared_error', metrics = ['mean_absolute_error'])
         
         ## Loading model and weights of eMBB
-        file = open('/home/nilton/EON_SIMULATOR/IA/mMTC_URLLC_brain.json', 'r')
+        file = open('../IA/mMTC_URLLC_brain.json', 'r')
         self.URLLC_mMTC_model = model_from_json(file.read())
         file.close()
-        self.URLLC_mMTC_model.load_weights('/home/nilton/EON_SIMULATOR/IA/mMTC_URLLC_brain_pesos.h5')
+        self.URLLC_mMTC_model.load_weights('../IA/mMTC_URLLC_brain_pesos.h5')
         # Loading scaler of URLLC_mMTC
-        self.URLLC_mMTC_scaler = joblib.load('/home/nilton/EON_SIMULATOR/IA/mMTC_URLLC_normalizer.save')
+        self.URLLC_mMTC_scaler = joblib.load('../IA/mMTC_URLLC_normalizer.save')
         # compiling the model
         self.URLLC_mMTC_model.compile(optimizer = 'rmsprop', loss = 'mean_squared_error', metrics = ['mean_absolute_error'])
     

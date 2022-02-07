@@ -225,11 +225,11 @@ class lightpath:
         flag = False
         if len(self.ia_data_input) == 2:
             if self.service_type == 'eMBB':
-                prediction = self.IA.predict_eMBB(self.ia_data_input)
+                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)
             else:
-                prediction = self.IA.predict_UR_mM(self.ia_data_input)
-            print("\n lightpath: {} - Predição: {} \n".format(self.id,prediction))
-            flag = self.update_connection(prediction)
+                self.traffic_predicted = self.IA.predict_UR_mM(self.ia_data_input)
+            print("\n lightpath: {} - Predição: {} \n".format(self.id,self.traffic_predicted))
+            flag = self.update_connection(self.traffic_predicted)
             self.ia_data_input.pop(0) 
         else:
             flag = self.update_connection(self.ia_data_input[0])

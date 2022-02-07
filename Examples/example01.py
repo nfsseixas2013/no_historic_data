@@ -73,7 +73,7 @@ def test_run():
     brain = IA()
     
     ## Setting controller
-    controller = control(env)
+    controller = control(env,net)
     ##### Setting lightpaths ######
     traffic1 = [10,20,40]
     traffic2 = [10,20,40]
