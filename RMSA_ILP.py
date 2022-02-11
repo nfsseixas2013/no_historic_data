@@ -101,5 +101,9 @@ class rmsa_ilp:
         self.inicia_gama()
         self.inicia_dpm()
         self.inicia_ldp()
-        
+    
+    def print_gama(self,indice):
+        for i in self.gama:
+            if i[0] == indice:
+                print(i)
                     

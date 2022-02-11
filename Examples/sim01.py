@@ -70,36 +70,32 @@ net = network(topology,switches,actors,frequency_slot,env)
 # IA module ##
 brain = IA()
 ## Setting controller
-controller = control(env,net)
+controller = control(env,net,ILP)
 
 ## Setting slices:
 #eMBB
 slices_eMBB = []
 lightpaths = []
 destination = 7
-cloud = 19
 node_source = 4
 factor = 14
 i = 0
 while i < factor:
-    if destination != cloud:
-        new = lightpath(env,i,[0,1],node_source,destination,traffic_eMBB[i],net,'eMBB','max', brain,controller)
-        new.set_ILP(traffic_eMBB[i][0],0.002,ILP)
-        slices_eMBB.append(new)
-        lightpaths.append(new)
-    i += 1
-    
-    destination += 1
+   new = lightpath(env,i,[0,1],node_source,destination,traffic_eMBB[i],net,'eMBB','max', brain,controller)
+   new.set_ILP(traffic_eMBB[i][0],0.002,ILP)
+   slices_eMBB.append(new)
+   lightpaths.append(new)
+   i += 1
+   destination += 1
 
 slices_URLLC = []
 i = 0
 destination = 7
 while i < factor:
-    if destination != cloud:
-        new = lightpath(env,i+factor,[0,1],node_source,destination,traffic_URLLC[i],net,'URLLC','max', brain,controller)
-        new.set_ILP(traffic_URLLC[i][0],0.00025,ILP)
-        slices_URLLC.append(new)
-        lightpaths.append(new)
+    new = lightpath(env,i+factor,[0,1],node_source,destination,traffic_URLLC[i],net,'URLLC','max', brain,controller)
+    new.set_ILP(traffic_URLLC[i][0],0.00025,ILP)
+    slices_URLLC.append(new)
+    lightpaths.append(new)
     i += 1
     destination += 1
     
@@ -107,17 +103,16 @@ slices_mMTC = []
 i = 0
 destination = 7
 while i < factor:
-    if destination != cloud:
-        new = lightpath(env,i+(factor*2),[0,1],node_source,destination,traffic_mMTC[i],net,'mMTC','max', brain,controller)
-        new.set_ILP(traffic_mMTC[i][0],0.002,ILP)
-        slices_mMTC.append(new)
-        lightpaths.append(new)
+    new = lightpath(env,i+(factor*2),[0,1],node_source,destination,traffic_mMTC[i],net,'mMTC','max', brain,controller)
+    new.set_ILP(traffic_mMTC[i][0],0.002,ILP)
+    slices_mMTC.append(new)
+    lightpaths.append(new)
     i += 1
     destination += 1
     
 ## 
 conf = ILP.solver()
 Interface.setting_connections(conf,lightpaths)
-env.run(until = 1800)
+env.run(until = 600*144)
 
 
