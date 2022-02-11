@@ -205,7 +205,7 @@ class lightpath:
 ############################################ Setting UP ##########################################################################
             
     def get_nodes_chosen(self):
-        self.nodes = Interface.links2nodes(self.links_ref[self.path])
+        self.nodes = Interface.links2nodes(self.links_ref[self.path],self.links_candidates[self.path])
     
     def set_lightpaths(self):
         self.get_nodes_chosen()

@@ -13,7 +13,7 @@ import copy as c
 
 ############################################# Sorted links candidates ########
 def get_nodes_candidates(net, source, destination):
-   paths =  list(it.islice(nx.shortest_simple_paths(net.graph, source, destination), 3))
+   paths =  list(it.islice(nx.shortest_simple_paths(net.graph, source, destination), 2))
    links = []
    for i in paths:
        link = nodes2links(i)
@@ -235,15 +235,24 @@ def setting_connections_update(conf,lightpaths):
             if j[0] == i.id:
                 i.set_conf_update(j)
                 
-
-def links2nodes(links):
-    nodes = []
+def fetch_node(id_, links):
     for i in links:
-        if i.nodes[0] not in nodes:
-            nodes.append(i.nodes[0])
-        if i.nodes[1] not in nodes:
-            nodes.append(i.nodes[1])
+        if i.nodes[0].id == id_ :
+            return i.nodes[0]
+        elif i.nodes[1].id == id_:
+            return i.nodes[1]
+
+def links2nodes(links,nodes_candidates):
+    nodes = []
+    for i in nodes_candidates:
+        candidate = fetch_node(i[0], links)
+        if candidate not in nodes:
+            nodes.append(candidate)
+        candidate = fetch_node(i[1], links)
+        if candidate not in nodes:
+            nodes.append(candidate)
     return nodes
+            
                 
         
     
