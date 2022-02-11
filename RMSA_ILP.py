@@ -103,7 +103,7 @@ class rmsa_ilp:
         self.inicia_ldp()
     
     def print_gama(self,indice):
-        for i in self.gama:
+        for i in self.gama.keys():
             if i[0] == indice:
-                print(i)
+                print("{} : {}".format(i,self.gama[i]))
                     

@@ -35,7 +35,7 @@ switches = [1,2,3,5,6]
 actors = [4,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
 frequency_slot = 0
 # Traffic indexes
-indexes = [5161, 5059, 5262, 5758, 5162, 5061, 5956, 6064, 5458, 5259, 4452, 5160,4452,5160]# duplicando os dois últimos
+indexes = [5161, 5059, 5262, 5758, 5162, 5061, 5956, 6064, 5458, 5259, 4452, 5161,4452,5160]# duplicando os dois últimos
 
 ## Traffic
 ds = pd.read_csv("../Examples/traffic_sim.csv")
