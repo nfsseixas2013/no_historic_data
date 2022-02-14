@@ -8,7 +8,6 @@ Created on Tue Feb  8 09:15:48 2022
 
 import sys
 sys.path.append("../")
-sys.path.append("../IA")
 
 from Network import network
 import Interface
@@ -22,20 +21,21 @@ import pandas as pd
 
 # Constantes
 # ILP
-qtd_demanda = 8 * 3
-qtd_links = 17
+qtd_demanda = 14 * 3
+qtd_links = 22
 qtd_path = 2
 qtd_channel = 1
-qtd_frequency_slot = 34
+qtd_frequency_slot = 800
 qtd_modulacao = 2
 # NET 
 topology = [(1,2,10),(1,5,10),(2,3,20),(2,5,25),(3,4,10),(3,6,25),(4,6,10),(5,6,30),(7,1,5),(8,1,5),
-            (9,2,5),(10,2,5), (11,3,5),(12,3,5),(13,4,5),(14,6,5),(15,5,5)]
-switches = [1,2,3,4,5,6]
-actors = [7,8,9,10,11,12,13,14,15]
+            (9,1,5),(10,1,5), (11,2,5),(12,2,5),(13,2,5),(14,2,5),(15,3,5),(16,3,5),(17,3,5),(18,3,5),
+            (19,6,5),(20,5,5)]
+switches = [1,2,3,5,6]
+actors = [4,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
 frequency_slot = 0
 # Traffic indexes
-indexes = [6878, 1641, 8890, 8791, 3861, 7045,6878,1641]
+indexes = [5161, 5059, 5262, 5758, 5162, 5061, 5956, 6064, 5458, 5259, 4452, 5161,4452,5160]# duplicando os dois últimos
 
 ## Traffic
 ds = pd.read_csv("../Examples/traffic_sim.csv")
@@ -70,52 +70,49 @@ net = network(topology,switches,actors,frequency_slot,env)
 # IA module ##
 brain = IA()
 ## Setting controller
-controller = control(env,net)
+controller = control(env,net,ILP)
 
 ## Setting slices:
 #eMBB
 slices_eMBB = []
 lightpaths = []
 destination = 7
-cloud = 13
 node_source = 4
-factor = 8
+factor = 14
 i = 0
 while i < factor:
-    if destination != cloud:
-        new = lightpath(env,i,[0,1],node_source,destination,traffic_eMBB[i],net,'eMBB','max', brain,controller)
-        slices_eMBB.append(new)
-        lightpaths.append(new)
-        i += 1
-    
-    destination += 1
+   new = lightpath(env,i,[0,1],node_source,destination,traffic_eMBB[i][80:117],net,'eMBB','max', brain,controller)
+   new.set_ILP(traffic_eMBB[i][0],0.002,ILP)
+   slices_eMBB.append(new)
+   lightpaths.append(new)
+   i += 1
+   destination += 1
 
 slices_URLLC = []
 i = 0
 destination = 7
 while i < factor:
-    if destination != cloud:
-        new = lightpath(env,i+factor,[0,1],node_source,destination,traffic_URLLC[i],net,'URLLC','max', brain,controller)
-        slices_URLLC.append(new)
-        lightpaths.append(new)
-        i += 1
+    new = lightpath(env,i+factor,[0,1],node_source,destination,traffic_URLLC[i][80:117],net,'URLLC','max', brain,controller)
+    new.set_ILP(traffic_URLLC[i][0],0.00025,ILP)
+    slices_URLLC.append(new)
+    lightpaths.append(new)
+    i += 1
     destination += 1
     
 slices_mMTC = []
 i = 0
 destination = 7
 while i < factor:
-    if destination != cloud:
-        new = lightpath(env,i+(factor*2),[0,1],node_source,destination,traffic_mMTC[i],net,'mMTC','max', brain,controller)
-        slices_mMTC.append(new)
-        lightpaths.append(new)
-        i += 1
+    new = lightpath(env,i+(factor*2),[0,1],node_source,destination,traffic_mMTC[i][80:117],net,'mMTC','max', brain,controller)
+    new.set_ILP(traffic_mMTC[i][0],0.002,ILP)
+    slices_mMTC.append(new)
+    lightpaths.append(new)
+    i += 1
     destination += 1
     
 ## 
 conf = ILP.solver()
-
-    
-
+Interface.setting_connections(conf,lightpaths)
+env.run(until = 600*36)
 
 

@@ -32,7 +32,7 @@ class lightpath:
         self.links_ref = []
         self.slices = []
         self.net = net
-        self.traffic_predicted = traffic[0] ## depois mudar isso
+        self.traffic_predicted = 0 ## depois mudar isso
         self.path = 0 # defined by ILP solution
         self.modulation = 0 # defined by ILP solution
         self.slots = []
@@ -41,7 +41,9 @@ class lightpath:
         self.metric = metric
         self.service_type = service_type
         self.ia_data_input = []
-        controller.set_lightpaths(self)
+        self.controller = controller
+        self.controller.set_lightpaths(self)
+        self.flag_update = False
 	# Interruption
         self.action = self.env.process(self.run())
        
@@ -225,16 +227,18 @@ class lightpath:
         flag = False
         if len(self.ia_data_input) == 2:
             if self.service_type == 'eMBB':
-                #self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)
-                self.traffic_predicted = max(self.ia_data_input)
+                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)
+                #self.traffic_predicted = max(self.ia_data_input)
             else:
-                #self.traffic_predicted = self.IA.predict_UR_mM(self.ia_data_input)
-                self.traffic_predicted = max(self.ia_data_input)
-            print("\n lightpath: {} - Predição: {} \n".format(self.id,self.traffic_predicted))
+                self.traffic_predicted = self.IA.predict_UR_mM(self.ia_data_input)
+                #self.traffic_predicted = max(self.ia_data_input)
+            print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
             flag = self.update_connection(self.traffic_predicted)
             self.ia_data_input.pop(0) 
         else:
             flag = self.update_connection(self.ia_data_input[0])
+            self.traffic_predicted = self.ia_data_input[0]
+            print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
         return flag
         
     def run(self):
@@ -246,11 +250,15 @@ class lightpath:
                 while contador <  600: # 10 minutes
                     traffic = np.random.poisson(i,1)[0]
                     try:
+                        if self.flag_update == True:
+                            self.set_conf_update(self.get_conf_indices())
+                            self.flag_update = False
                         self.sending_traffic(traffic)
                         interval_data.append(traffic)
                         yield self.env.timeout(1)
                     except simpy.Interrupt:
                         contador =-1
+                        self.flag_update = True
                     contador += 1
                 if self.metric == 'median':
                     self.ia_data_input.append(np.median(interval_data))
@@ -258,17 +266,24 @@ class lightpath:
                     self.ia_data_input.append(np.quantile(interval_data,0.75))
                 else:
                     self.ia_data_input.append(np.amax(interval_data))
-                #input_data_IA = self.setup_predictions(input_data_IA)
+                flag = self.setup_predictions()
+                self.env.process(self.send_msg_control(flag))
+                
                 
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0])
+               
+    def send_msg_control(self,flag):
+        msg = [flag, self.traffic_predicted, self]
+        self.controller.connection.put(msg)
+        yield self.controller.env.process(self.controller.receive_msg(msg))
+        yield self.env.timeout(0.000001)
                      
     def sending_traffic(self, traffic):
         slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
         if self.slots[self.modulation] - slots_needed < 0:
             self.report.append([self.env.now, 0])
-            self.traffic_predicted = 0
         else:
             self.env.process(self.sending(traffic))
         
@@ -279,6 +294,11 @@ class lightpath:
         self.report.append([self.env.now, load]) # Reporting
         self.traffic_predicted = load
         yield self.env.timeout(self.links_ref[self.path][0].cost) # getting the cost of the transmission
+        
+    def get_conf_indices(self):
+        for i in self.controller.conf:
+            if i[0] == self.id:
+                return i
     
     
     
