@@ -13,10 +13,17 @@ class Actor(node):
     def __init__(self, cod, env):
         super().__init__(cod, env)
         
-    def receive_msg(self):
+    def receive_msg(self,cost):
         msg = yield self.connection.get()
+        yield self.env.timeout(cost)
         print('the bits of lightpath %d has been received at %f by node %d' % (msg[2], self.env.now, self.id))
-    
+        
+        
+        
+        
+        
+        
+        
         
        
         

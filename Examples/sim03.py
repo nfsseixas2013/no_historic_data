@@ -17,10 +17,17 @@ from Lightpath import lightpath
 import pandas as pd
 from IA.IA import IA
 from Control import control
+import sys
 import numpy as np
-
+## Handling Parameters
 args = [x for x in sys.argv]
 args.pop(0)
+## Renewing seed:
+'''
+args[0] name
+args[1] seed
+'''
+np.random.seed(int(args[1]))
 # Constantes
 # ILP
 qtd_demanda = 14 * 3
@@ -37,8 +44,8 @@ switches = [1,2,3,5,6]
 actors = [4,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
 frequency_slot = 0
 # Traffic indexes
-indexes = [5161, 5059, 5262, 5758, 5162, 5061, 5956, 6064, 5458, 5259, 4452, 5160,4452,5160]# duplicando os dois últimos
-
+indexes = [5161, 5059, 5262, 5758, 5162, 5061, 5956, 6064, 5458, 5259, 4452, 5161,4452,5160]# duplicando os dois últimos
+  
 ## Traffic
 ds = pd.read_csv("../Examples/traffic_sim.csv")
 def get_traffic(data,indice,lista,kind):
@@ -83,8 +90,8 @@ node_source = 4
 factor = 14
 i = 0
 while i < factor:
-   new = lightpath(env,i,[0,1],node_source,destination,traffic_eMBB[i],net,'eMBB','max', brain,controller)
-   new.set_ILP(traffic_eMBB[i][0],0.002,ILP)
+   new = lightpath(env,i,[0,1],node_source,destination,traffic_eMBB[i][75:117],net,'eMBB','max', brain,controller)
+   new.set_ILP(traffic_eMBB[i][75],0.002,ILP)
    slices_eMBB.append(new)
    lightpaths.append(new)
    i += 1
@@ -94,8 +101,8 @@ slices_URLLC = []
 i = 0
 destination = 7
 while i < factor:
-    new = lightpath(env,i+factor,[0,1],node_source,destination,traffic_URLLC[i],net,'URLLC','max', brain,controller)
-    new.set_ILP(traffic_URLLC[i][0],0.00025,ILP)
+    new = lightpath(env,i+factor,[0,1],node_source,destination,traffic_URLLC[i][75:117],net,'URLLC','max', brain,controller)
+    new.set_ILP(traffic_URLLC[i][75],0.00025,ILP)
     slices_URLLC.append(new)
     lightpaths.append(new)
     i += 1
@@ -105,8 +112,8 @@ slices_mMTC = []
 i = 0
 destination = 7
 while i < factor:
-    new = lightpath(env,i+(factor*2),[0,1],node_source,destination,traffic_mMTC[i],net,'mMTC','max', brain,controller)
-    new.set_ILP(traffic_mMTC[i][0],0.002,ILP)
+    new = lightpath(env,i+(factor*2),[0,1],node_source,destination,traffic_mMTC[i][75:117],net,'mMTC','max', brain,controller)
+    new.set_ILP(traffic_mMTC[i][75],0.002,ILP)
     slices_mMTC.append(new)
     lightpaths.append(new)
     i += 1
@@ -114,10 +121,11 @@ while i < factor:
     
 ## 
 conf,cost = ILP.solver()
+## Adicionar o custo inicial para o control
 controller.init_energy(cost)
 Interface.setting_connections(conf,lightpaths)
-env.run(until = 600*144)
-
+env.run(until = 600*42)
+#env.run(until = 1)
 
 
 ## Reports:
@@ -148,5 +156,4 @@ data2.to_csv("/home/nilton/Arquivos/Resultados/MAX_IA_ULTRA/Frag_time/"+name)
 ### Energy costs:
 name = args[0]+"_energy_costs.csv"
 controller.get_energy_costs().to_csv("/home/nilton/Arquivos/Resultados/MAX_IA_ULTRA/ILP/"+name)
-
 

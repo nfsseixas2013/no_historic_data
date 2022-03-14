@@ -57,7 +57,7 @@ class network:
         indice = 0
         for i in self.conf_graph:
             nodes = self.get_nodes(i[0], i[1])
-            aux = link(nodes[0], nodes[1], self.frequency_slot_size, i[2], indice)
+            aux = link(nodes[0], nodes[1], self.frequency_slot_size, i[2], indice,self.env)
             self.links.append(aux)
             nodes[0].links.append(aux)
             nodes[1].links.append(aux)

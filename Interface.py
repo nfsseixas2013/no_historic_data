@@ -133,6 +133,27 @@ def get_number_slots(need, modulacao, net): # need in Gbps
                 bandwidth += slot_size
                 count += 1
         return count
+    
+def get_bandwidth(slots,modulation,net):
+    slot_type = net.links[0].size # The size is equal to everyone
+    if modulation == 1:
+        if slot_type == 0 or slot_type == 3: # 5GHZ
+            slot_size = 40
+        elif slot_type == 1: # 6.25GHZ
+            slot_size = 48
+        else:
+            slot_size = 100 # 12.5 GHZ
+    else:
+        if slot_type == 0 or slot_type == 3:
+            slot_size = 30
+        elif slot_type == 1:
+            slot_size = 36
+        else:
+            slot_size = 75
+    bandwidth = 0
+    for i in range(0,slots):
+        bandwidth += slot_size
+    return bandwidth
 
 
 def get_link_ref(link,net):## Link is a tuple
@@ -253,7 +274,9 @@ def links2nodes(links,nodes_candidates):
             nodes.append(candidate)
     return nodes
             
-                
+
+    
+               
         
     
         

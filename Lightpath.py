@@ -44,6 +44,11 @@ class lightpath:
         self.controller = controller
         self.controller.set_lightpaths(self)
         self.flag_update = False
+        self.granted = 0
+        self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
+        self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
+        self.ia_factor = 417
+
 	# Interruption
         self.action = self.env.process(self.run())
        
@@ -153,15 +158,9 @@ class lightpath:
         self.path = indice[1]
         self.modulation = indice[3]
         self.set_connection()
-        self.set_lightpaths()
-        
-    def set_conf_update(self,indice):
-        self.path = indice[1]
-        self.modulation = indice[3]
-        self.set_connection()
-        self.update_lightpaths()
-        
-        
+        self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
+       
+         
     def calculate_latencies(self):
         latencias = []
         for i in self.links_ref:
@@ -208,26 +207,36 @@ class lightpath:
             
     def get_nodes_chosen(self):
         self.nodes = Interface.links2nodes(self.links_ref[self.path],self.links_candidates[self.path])
-    
+    '''
     def set_lightpaths(self):
         self.get_nodes_chosen()
         for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
             self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
             
-    def update_lightpaths(self):
+    def update_lightpaths(self):### Consertar isso durante 
         for i in range(0, len(self.nodes) - 1):
-            self.nodes[i].remove_item_next_hope(self.id)
-        self.get_nodes_chosen()
+           # self.nodes[i].remove_item_next_hope(self.id)
+           msg = [2,self.id,self]
+           self.nodes[i].connection.put(msg)
+           yield self.nodes[i].env.process(self.nodes[i].receive_msg())
+           #yield self.connection_nodes.get() # to wait for confirmation
+           
+        self.get_nodes_chosen() 
         for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
-            self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
-            
+            #self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
+            msg = [1, [self.id, self.nodes[i+1]],self]
+            self.nodes[i].connection.put(msg)
+            yield self.nodes[i].env.process(self.nodes[i].receive_msg())
+            #yield self.connection_nodes.get()
+    '''
+        
 ################################################ TRAFFIC #########################################################################
     
     def setup_predictions(self):
         flag = False
         if len(self.ia_data_input) == 2:
             if self.service_type == 'eMBB':
-                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)
+                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)+self.ia_factor
                 #self.traffic_predicted = max(self.ia_data_input)
             else:
                 self.traffic_predicted = self.IA.predict_UR_mM(self.ia_data_input)
@@ -235,10 +244,12 @@ class lightpath:
             print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
             flag = self.update_connection(self.traffic_predicted)
             self.ia_data_input.pop(0) 
+        elif len(self.ia_data_input) < 2 and self.service_type == 'eMBB':
+            self.traffic_predicted = self.ia_data_input[0]+self.ia_factor
+            flag = self.update_connection(self.traffic_predicted)
         else:
             flag = self.update_connection(self.ia_data_input[0])
-            self.traffic_predicted = self.ia_data_input[0]
-            print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
+        print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
         return flag
         
     def run(self):
@@ -251,8 +262,8 @@ class lightpath:
                     traffic = np.random.poisson(i,1)[0]
                     try:
                         if self.flag_update == True:
-                            self.set_conf_update(self.get_conf_indices())
-                            self.flag_update = False
+                            indices = self.get_conf_indices()
+                            self.set_conf(indices)
                         self.sending_traffic(traffic)
                         interval_data.append(traffic)
                         yield self.env.timeout(1)
@@ -268,38 +279,89 @@ class lightpath:
                     self.ia_data_input.append(np.amax(interval_data))
                 flag = self.setup_predictions()
                 self.env.process(self.send_msg_control(flag))
-                
-                
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0])
                
-    def send_msg_control(self,flag):
-        msg = [flag, self.traffic_predicted, self]
-        self.controller.connection.put(msg)
-        yield self.controller.env.process(self.controller.receive_msg(msg))
-        yield self.env.timeout(0.000001)
+    
                      
     def sending_traffic(self, traffic):
         slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
         if self.slots[self.modulation] - slots_needed < 0:
             self.report.append([self.env.now, 0])
         else:
-            self.env.process(self.sending(traffic))
+            #self.env.process(self.sending(traffic))
+            wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - traffic
+            request = traffic
+            self.report.append([self.id, self.env.now, traffic, self.path, wasting, self.traffic_predicted, request, self.granted]) # Reporting
+            self.sending(traffic)
         
     def sending(self,load): # Modularization of sending of one msg
-        msg = [self.env.now,"bytes", self.id, load] # Setting msg
+
+        '''
         self.nodes[0].connection.put(msg) # Putting the msg in the store of the nodes
         self.nodes[0].env.process(self.nodes[0].forwarding_msg(msg)) ## Formarding not receive # Lightpath just send.
+
+        wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - load
+        request = load
+        self.report.append([self.id, self.env.now, load, self.path, wasting, self.traffic_predicted, request, self.granted]) # Reporting
+        #self.traffic_predicted = load
+        
+
         self.report.append([self.env.now, load]) # Reporting
         self.traffic_predicted = load
-        yield self.env.timeout(self.links_ref[self.path][0].cost) # getting the cost of the transmission
         
+        yield self.env.timeout(self.links_ref[self.path][0].cost) # getting the cost of the transmission
+        '''
+        cost = 0
+        self.get_nodes_chosen()
+        for i in range(0, len(self.nodes)-1):
+            link = self.get_link(self.nodes[i], self.nodes[i+1])
+            cost += link.cost
+            #yield self.env.timeout(link.cost)
+            msg = [self.env.now,"bytes", self.id, load]
+            self.nodes[i+1].connection.put(msg)
+            self.nodes[i+1].env.process(self.nodes[i+1].receive_msg(cost))
+             
     def get_conf_indices(self):
         for i in self.controller.conf:
             if i[0] == self.id:
                 return i
+          
+    def get_link(self, node1, node2):
+        for i in self.net.links:
+            if node1 in i.nodes and node2 in i.nodes:
+                return i
     
+################################# CONTROL ###########################################################
+    def send_msg_control(self,flag):
+        msg = [flag, self.traffic_predicted, self]
+        self.controller.connection.put(msg)
+        yield self.controller.env.process(self.controller.receive_msg(msg))
+        yield self.env.timeout(0.000001)
+    '''
+    def receive_msg_control(self):
+        msg = yield self.connection_control.get()
+        self.set_ILP_update(self.traffic_predicted,self.latencia_required,msg[0])     
+        yield self.env.timeout(0.0000001)
+        #self.controller.connection.put("reply_lightpath")
+    '''
+            
+#######################################################################################################################     
+        
+    def get_reports(self):
+        import pandas as pd
+        id_lightpath = [x[0] for x in self.report]
+        time = [x[1] for x in self.report]
+        traffic = [x[2] for x in self.report]
+        path = [x[3] for x in self.report]
+        wasting = [x[4] for x in self.report]
+        predicted_traffic = [x[5] for x in self.report]
+        request = [x[6] for x in self.report]
+        granted = [x[7] for x in self.report]
+        data_dict = {'id':id_lightpath, 'time': time, 'traffic': traffic, 'path': path, 'wasting': wasting, 'predicted_traffic': predicted_traffic, 'request': request, 'granted': granted}
+        return pd.DataFrame(data_dict)
+
     
     
      

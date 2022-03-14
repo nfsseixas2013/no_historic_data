@@ -91,7 +91,7 @@ class rmsa_ilp:
                 if S[i] == 1:
                     print("Indice :{}".format(i))
                     conf.append(i)
-            return conf
+            return conf,solution.get_objective_value()
                 
         else:
             return None
