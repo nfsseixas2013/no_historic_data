@@ -48,6 +48,7 @@ class lightpath:
         self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
         self.ia_factor = 417
+        #self.ia_factor = 0
 
 	# Interruption
         self.action = self.env.process(self.run())
@@ -241,7 +242,7 @@ class lightpath:
             else:
                 self.traffic_predicted = self.IA.predict_UR_mM(self.ia_data_input)
                 #self.traffic_predicted = max(self.ia_data_input)
-            print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
+            #print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
             flag = self.update_connection(self.traffic_predicted)
             self.ia_data_input.pop(0) 
         elif len(self.ia_data_input) < 2 and self.service_type == 'eMBB':
@@ -278,6 +279,8 @@ class lightpath:
                 else:
                     self.ia_data_input.append(np.amax(interval_data))
                 flag = self.setup_predictions()
+                if flag:
+                    self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
                 self.env.process(self.send_msg_control(flag))
         else:
             while True: # # Using poisson to model the traffic
@@ -287,12 +290,12 @@ class lightpath:
                      
     def sending_traffic(self, traffic):
         slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
+        request = traffic
         if self.slots[self.modulation] - slots_needed < 0:
-            self.report.append([self.env.now, 0])
+            self.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted])
         else:
             #self.env.process(self.sending(traffic))
             wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - traffic
-            request = traffic
             self.report.append([self.id, self.env.now, traffic, self.path, wasting, self.traffic_predicted, request, self.granted]) # Reporting
             self.sending(traffic)
         

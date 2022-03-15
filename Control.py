@@ -9,6 +9,7 @@ import Interface
 import simpy
 import numpy as np
 import pandas as pd
+from statistics import mean
 class control:
     def __init__(self, env, net, ilp):
         self.lightpaths = []
@@ -17,7 +18,7 @@ class control:
         self.ilp = ilp
         self.flag = []
         self.connection = simpy.Store(env,capacity=simpy.core.Infinity)
-        self.demands_size = 14 * 3
+        self.demands_size = 6 * 3
         self.conf = []
         self.energy = []
         
@@ -50,6 +51,7 @@ class control:
             i.reset_control()
         for i in self.flag:
             i[2].set_ILP_update(i[1],i[2].latencia_required,self.ilp)
+            print(f"Lightpath :{i[2].id} -- slices: {i[2].slices}")
 
         self.conf,energy = self.ilp.solver()
         self.energy.append(energy)
@@ -77,7 +79,9 @@ class control:
         self.energy.append(cost)
         
     def get_energy_costs(self):
-        dict_data = {'energy_cost': np.mean(self.energy)}
+        data = []
+        data.append(mean(self.energy))
+        dict_data = {'energy_cost': data}
         return pd.DataFrame(dict_data)
                 
                 
