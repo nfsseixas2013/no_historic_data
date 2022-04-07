@@ -47,7 +47,9 @@ class lightpath:
         self.granted = 0
         self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
-        self.ia_factor = 417
+        self.eMBB_factor = 300.5
+        self.mMTC_factor = 2.50
+        self.URLLC_factor = 1.40
         #self.ia_factor = 0
 
 	# Interruption
@@ -208,48 +210,29 @@ class lightpath:
             
     def get_nodes_chosen(self):
         self.nodes = Interface.links2nodes(self.links_ref[self.path],self.links_candidates[self.path])
-    '''
-    def set_lightpaths(self):
-        self.get_nodes_chosen()
-        for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
-            self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
-            
-    def update_lightpaths(self):### Consertar isso durante 
-        for i in range(0, len(self.nodes) - 1):
-           # self.nodes[i].remove_item_next_hope(self.id)
-           msg = [2,self.id,self]
-           self.nodes[i].connection.put(msg)
-           yield self.nodes[i].env.process(self.nodes[i].receive_msg())
-           #yield self.connection_nodes.get() # to wait for confirmation
-           
-        self.get_nodes_chosen() 
-        for i in range(0, len(self.nodes)-1): # Setting the circuit in the nodes.
-            #self.nodes[i].set_hopes([self.id, self.nodes[i+1]])
-            msg = [1, [self.id, self.nodes[i+1]],self]
-            self.nodes[i].connection.put(msg)
-            yield self.nodes[i].env.process(self.nodes[i].receive_msg())
-            #yield self.connection_nodes.get()
-    '''
         
 ################################################ TRAFFIC #########################################################################
     
     def setup_predictions(self):
         flag = False
-        if len(self.ia_data_input) == 2:
+        if len(self.ia_data_input) == 4:
             if self.service_type == 'eMBB':
-                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)+self.ia_factor
-                #self.traffic_predicted = max(self.ia_data_input)
-            else:
-                self.traffic_predicted = self.IA.predict_UR_mM(self.ia_data_input)
-                #self.traffic_predicted = max(self.ia_data_input)
-            #print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
+                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)+self.eMBB_factor
+            elif self.service_type == 'mMTC':
+                self.traffic_predicted = self.IA.predict_mMTC(self.ia_data_input)
+            elif self.service_type == 'URLLC':
+                self.traffic_predicted = self.IA.predict_URLLC(self.ia_data_input)
             flag = self.update_connection(self.traffic_predicted)
             self.ia_data_input.pop(0) 
-        elif len(self.ia_data_input) < 2 and self.service_type == 'eMBB':
-            self.traffic_predicted = self.ia_data_input[0]+self.ia_factor
-            flag = self.update_connection(self.traffic_predicted)
-        else:
-            flag = self.update_connection(self.ia_data_input[0])
+            
+        elif len(self.ia_data_input) < 4 and self.service_type == 'eMBB':
+            self.traffic_predicted = self.ia_data_input[0]+self.eMBB_factor
+        elif len(self.ia_data_input) < 4 and self.service_type == 'mMTC':
+            self.traffic_predicted = self.ia_data_input[0]+self.mMTC_factor
+        elif len(self.ia_data_input) < 4 and self.service_type == 'URLLC':
+            self.traffic_predicted = self.ia_data_input[0]+self.URLLC_factor
+
+        flag = self.update_connection(self.traffic_predicted)
         print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
         return flag
         
