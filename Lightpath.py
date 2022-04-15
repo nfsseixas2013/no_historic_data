@@ -13,7 +13,7 @@ import simpy
 from IA.IA import IA
 class lightpath:
     
-    def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA, controller):
+    def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA, controller, error_type):
         self.id = cod
         self.nodes = []
         self.mode = mode
@@ -50,6 +50,8 @@ class lightpath:
         self.eMBB_factor = 300.5
         self.mMTC_factor = 2.50
         self.URLLC_factor = 1.40
+        self.split = None
+        self.error_type = error_type
         #self.ia_factor = 0
 
 	# Interruption
@@ -236,6 +238,49 @@ class lightpath:
         print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
         return flag
         
+
+    def sending(self,load): # Modularization of sending of one msg
+        cost = 0
+        self.get_nodes_chosen()
+        for i in range(0, len(self.nodes)-1):
+            link = self.get_link(self.nodes[i], self.nodes[i+1])
+            cost += link.cost
+            #yield self.env.timeout(link.cost)
+            msg = [self.env.now,"bytes", self.id, load]
+            self.nodes[i+1].connection.put(msg)
+            self.nodes[i+1].env.process(self.nodes[i+1].receive_msg(cost))
+        return cost
+
+
+    def sending_traffic(self, traffic):
+        slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
+        request = traffic
+        if self.slots[self.modulation] - slots_needed < 0:
+            self.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted, self.error_type])
+            if self.split != None:
+                self.split.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted,self.error_type])
+        else:
+            #self.env.process(self.sending(traffic))
+            wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - traffic
+            self.report.append([self.id, self.env.now, traffic, self.path, wasting, self.traffic_predicted, request, self.granted, self.error_type]) # Reporting
+            cost = self.sending(traffic)
+            yield self.env.timeout(cost)
+            if self.split != None:
+                self.split.env.process(self.split.run(traffic))
+        
+   
+             
+    def get_conf_indices(self):
+        for i in self.controller.conf:
+            if i[0] == self.id:
+                return i
+          
+    def get_link(self, node1, node2):
+        for i in self.net.links:
+            if node1 in i.nodes and node2 in i.nodes:
+                return i
+    
+
     def run(self):
         if type(self.traffic) == list:
              # Modelling of traffic
@@ -248,7 +293,7 @@ class lightpath:
                         if self.flag_update == True:
                             indices = self.get_conf_indices()
                             self.set_conf(indices)
-                        self.sending_traffic(traffic)
+                        self.env.process(self.sending_traffic(traffic))
                         interval_data.append(traffic)
                         yield self.env.timeout(1)
                     except simpy.Interrupt:
@@ -271,53 +316,7 @@ class lightpath:
                
     
                      
-    def sending_traffic(self, traffic):
-        slots_needed = Interface.get_number_slots(traffic,self.modulation,self.net)
-        request = traffic
-        if self.slots[self.modulation] - slots_needed < 0:
-            self.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted])
-        else:
-            #self.env.process(self.sending(traffic))
-            wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - traffic
-            self.report.append([self.id, self.env.now, traffic, self.path, wasting, self.traffic_predicted, request, self.granted]) # Reporting
-            self.sending(traffic)
-        
-    def sending(self,load): # Modularization of sending of one msg
-
-        '''
-        self.nodes[0].connection.put(msg) # Putting the msg in the store of the nodes
-        self.nodes[0].env.process(self.nodes[0].forwarding_msg(msg)) ## Formarding not receive # Lightpath just send.
-
-        wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - load
-        request = load
-        self.report.append([self.id, self.env.now, load, self.path, wasting, self.traffic_predicted, request, self.granted]) # Reporting
-        #self.traffic_predicted = load
-        
-
-        self.report.append([self.env.now, load]) # Reporting
-        self.traffic_predicted = load
-        
-        yield self.env.timeout(self.links_ref[self.path][0].cost) # getting the cost of the transmission
-        '''
-        cost = 0
-        self.get_nodes_chosen()
-        for i in range(0, len(self.nodes)-1):
-            link = self.get_link(self.nodes[i], self.nodes[i+1])
-            cost += link.cost
-            #yield self.env.timeout(link.cost)
-            msg = [self.env.now,"bytes", self.id, load]
-            self.nodes[i+1].connection.put(msg)
-            self.nodes[i+1].env.process(self.nodes[i+1].receive_msg(cost))
-             
-    def get_conf_indices(self):
-        for i in self.controller.conf:
-            if i[0] == self.id:
-                return i
-          
-    def get_link(self, node1, node2):
-        for i in self.net.links:
-            if node1 in i.nodes and node2 in i.nodes:
-                return i
+  
     
 ################################# CONTROL ###########################################################
     def send_msg_control(self,flag):
@@ -325,13 +324,9 @@ class lightpath:
         self.controller.connection.put(msg)
         yield self.controller.env.process(self.controller.receive_msg(msg))
         yield self.env.timeout(0.000001)
-    '''
-    def receive_msg_control(self):
-        msg = yield self.connection_control.get()
-        self.set_ILP_update(self.traffic_predicted,self.latencia_required,msg[0])     
-        yield self.env.timeout(0.0000001)
-        #self.controller.connection.put("reply_lightpath")
-    '''
+ 
+    def set_splits(self, split):
+        self.split = split
             
 #######################################################################################################################     
         
@@ -345,7 +340,10 @@ class lightpath:
         predicted_traffic = [x[5] for x in self.report]
         request = [x[6] for x in self.report]
         granted = [x[7] for x in self.report]
-        data_dict = {'id':id_lightpath, 'time': time, 'traffic': traffic, 'path': path, 'wasting': wasting, 'predicted_traffic': predicted_traffic, 'request': request, 'granted': granted}
+        error_type = [x[8] for x in self.report]
+        data_dict = {'id':id_lightpath, 'time': time, 'traffic': traffic, 'path': path, 
+        'wasting': wasting, 'predicted_traffic': predicted_traffic, 'request': request, 'granted': granted,
+        'error_type': error_type}
         return pd.DataFrame(data_dict)
 
     
