@@ -44,12 +44,14 @@ class split(lightpath):
         self.URLLC_factor = 1.40
         self.interval_data = []
         self.error_type = error_type
+        self.time_factor = 600
+        self.action = None
         
 
     def run(self,traffic):
         try:
             if self.flag_update:
-                indices = super.get_conf_indices()
+                indices = super().get_conf_indices()
                 super().set_conf(indices)
             super().sending_traffic(traffic)
             self.interval_data.append(traffic)
@@ -62,6 +64,11 @@ class split(lightpath):
             self.ia_data_input.append(np.quantile(self.interval_data,0.75))
         else:
             self.ia_data_input.append(np.amax(self.interval_data))
+        if self.env.now % self.time_factor == 0:
+            self.run_predictions()
+        
+
+    def run_predictions(self):  
         flag = super().setup_predictions()
         if flag:
             self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)

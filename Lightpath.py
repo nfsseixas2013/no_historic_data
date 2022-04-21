@@ -257,8 +257,8 @@ class lightpath:
         request = traffic
         if self.slots[self.modulation] - slots_needed < 0:
             self.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted, self.error_type])
-            if self.split != None:
-                self.split.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted,self.error_type])
+            #if self.split != None:
+            #    self.split.report.append([self.id, self.env.now, 0, self.path, 0, self.traffic_predicted, request, self.granted,self.error_type])
         else:
             #self.env.process(self.sending(traffic))
             wasting = Interface.get_bandwidth(self.slots[self.modulation],self.modulation,self.net) - traffic
@@ -266,7 +266,7 @@ class lightpath:
             cost = self.sending(traffic)
             yield self.env.timeout(cost)
             if self.split != None:
-                self.split.env.process(self.split.run(traffic))
+                self.split.action = self.split.env.process(self.split.run(traffic))
         
    
              
@@ -310,6 +310,7 @@ class lightpath:
                 if flag:
                     self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
                 self.env.process(self.send_msg_control(flag))
+              
         else:
             while True: # # Using poisson to model the traffic
                self.sending_traffic(np.random.poisson(self.traffic,1)[0])
