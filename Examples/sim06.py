@@ -107,7 +107,7 @@ while i < factor:
 
 i = 0
 RU = 7
-indice = 10
+indice = 11
 while i < factor:
     new = split(env,i+(2*factor),[0,1],DU,RU,traffic_URLLC[i],net,'URLLC','max', brain,controller,'RADIO_BLOCK')
     new.set_ILP(traffic_URLLC[i][0],0.00025,ILP)

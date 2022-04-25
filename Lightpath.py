@@ -11,6 +11,7 @@ import Interface
 from Template import template
 import simpy
 from IA.IA import IA
+import pandas as pd
 class lightpath:
     
     def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA, controller, error_type):
@@ -47,6 +48,7 @@ class lightpath:
         self.granted = 0
         self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
+        self.connection_lightpath = simpy.Store(env,capacity=simpy.core.Infinity)
         self.eMBB_factor = 300.5
         self.mMTC_factor = 2.50
         self.URLLC_factor = 1.40
@@ -265,8 +267,10 @@ class lightpath:
             self.report.append([self.id, self.env.now, traffic, self.path, wasting, self.traffic_predicted, request, self.granted, self.error_type]) # Reporting
             cost = self.sending(traffic)
             yield self.env.timeout(cost)
-            if self.split != None:
-                self.split.action = self.split.env.process(self.split.run(traffic))
+            if type(self).__name__ == 'lightpath':
+                if self.split != None:
+                    msg = [traffic]
+                    self.split.connection_lightpath.put(msg)
         
    
              
@@ -332,7 +336,6 @@ class lightpath:
 #######################################################################################################################     
         
     def get_reports(self):
-        import pandas as pd
         id_lightpath = [x[0] for x in self.report]
         time = [x[1] for x in self.report]
         traffic = [x[2] for x in self.report]

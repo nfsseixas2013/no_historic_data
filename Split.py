@@ -39,33 +39,38 @@ class split(lightpath):
         self.granted = 0
         self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
+        self.connection_lightpath = simpy.Store(env,capacity=simpy.core.Infinity)
         self.eMBB_factor = 300.5
         self.mMTC_factor = 2.50
         self.URLLC_factor = 1.40
         self.interval_data = []
         self.error_type = error_type
         self.time_factor = 600
-        self.action = None
+        self.action = self.env.process(self.run())
         
 
-    def run(self,traffic):
-        try:
-            if self.flag_update:
-                indices = super().get_conf_indices()
-                super().set_conf(indices)
-            super().sending_traffic(traffic)
-            self.interval_data.append(traffic)
-            yield self.env.timeout(1)
-        except simpy.Interrupt:
-            self.flag_update = True
-        if self.metric == 'median':
-            self.ia_data_input.append(np.median(self.interval_data))
-        elif self.metric == 'quantile3':
-            self.ia_data_input.append(np.quantile(self.interval_data,0.75))
-        else:
-            self.ia_data_input.append(np.amax(self.interval_data))
-        if self.env.now % self.time_factor == 0:
-            self.run_predictions()
+    def run(self):
+        while True:
+            msg = yield self.connection_lightpath.get()
+            if msg != None:
+                traffic = msg[0]
+                try:
+                    if self.flag_update:
+                        indices = super().get_conf_indices()
+                        super().set_conf(indices)
+                    self.env.process(super().sending_traffic(traffic))
+                    self.interval_data.append(traffic)
+                    yield self.env.timeout(1)
+                except simpy.Interrupt:
+                    self.flag_update = True
+                if self.metric == 'median':
+                    self.ia_data_input.append(np.median(self.interval_data))
+                elif self.metric == 'quantile3':
+                    self.ia_data_input.append(np.quantile(self.interval_data,0.75))
+                else:
+                    self.ia_data_input.append(np.amax(self.interval_data))
+                if self.env.now % self.time_factor == 0:
+                    self.run_predictions()
         
 
     def run_predictions(self):  
