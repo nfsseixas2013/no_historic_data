@@ -287,40 +287,36 @@ class lightpath:
     
 
     def run(self):
-        if type(self.traffic) == list:
-             # Modelling of traffic
-            for i in self.traffic:
-                contador = 0
-                interval_data = []
-                while contador <  self.time_slot:
+
+        for i in self.traffic:
+            contador = 0
+            interval_data = []
+            while contador <  self.time_slot:
+                traffic = np.random.poisson(i,1)[0]
+                while traffic == 0:
                     traffic = np.random.poisson(i,1)[0]
-                    while traffic == 0:
-                        traffic = np.random.poisson(i,1)[0]
-                    try:
-                        if self.flag_update == True:
-                            indices = self.get_conf_indices()
-                            self.set_conf(indices)
-                        self.env.process(self.sending_traffic(traffic))
-                        interval_data.append(traffic)
-                        yield self.env.timeout(1)
-                    except simpy.Interrupt:
-                        contador =-1
-                        self.flag_update = True
-                    contador += 1
-                if self.metric == 'median':
-                    self.ia_data_input.append(np.median(interval_data))
-                elif self.metric == 'quantile3':
-                    self.ia_data_input.append(np.quantile(interval_data,0.75))
-                else:
-                    self.ia_data_input.append(np.amax(interval_data))
-                flag = self.setup_predictions()
-                if flag:
-                    self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
-                self.env.process(self.send_msg_control(flag))
+                try:
+                    if self.flag_update == True:
+                        indices = self.get_conf_indices()
+                        self.set_conf(indices)
+                    self.env.process(self.sending_traffic(traffic))
+                    interval_data.append(traffic)
+                    yield self.env.timeout(1)
+                except simpy.Interrupt:
+                    contador =-1
+                    self.flag_update = True
+                contador += 1
+            if self.metric == 'median':
+                self.ia_data_input.append(np.median(interval_data))
+            elif self.metric == 'quantile3':
+                self.ia_data_input.append(np.quantile(interval_data,0.75))
+            else:
+                self.ia_data_input.append(np.amax(interval_data))
+            flag = self.setup_predictions()
+            if flag:
+                self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
+            self.env.process(self.send_msg_control(flag))
               
-        else:
-            while True: # # Using poisson to model the traffic
-               self.sending_traffic(np.random.poisson(self.traffic,1)[0])
                
     
                      
