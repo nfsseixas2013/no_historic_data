@@ -51,26 +51,27 @@ class split(lightpath):
 
     def run(self):
         while True:
-            msg = yield self.connection_lightpath.get()
-            if msg != None:
-                traffic = msg[0]
-                try:
+            try:
+                msg = yield self.connection_lightpath.get()
+                if msg != None:
+                    traffic = msg[0]
+            
                     if self.flag_update:
                         indices = super().get_conf_indices()
                         super().set_conf(indices)
                     self.env.process(super().sending_traffic(traffic))
                     self.interval_data.append(traffic)
                     yield self.env.timeout(1)
-                except simpy.Interrupt:
-                    self.flag_update = True
-                if self.metric == 'median':
-                    self.ia_data_input.append(np.median(self.interval_data))
-                elif self.metric == 'quantile3':
-                    self.ia_data_input.append(np.quantile(self.interval_data,0.75))
-                else:
-                    self.ia_data_input.append(np.amax(self.interval_data))
-                if self.env.now % self.time_factor == 0:
-                    self.run_predictions()
+            except simpy.Interrupt:
+                self.flag_update = True
+            if self.metric == 'median':
+                self.ia_data_input.append(np.median(self.interval_data))
+            elif self.metric == 'quantile3':
+                self.ia_data_input.append(np.quantile(self.interval_data,0.75))
+            else:
+                self.ia_data_input.append(np.amax(self.interval_data))
+            if self.env.now % self.time_factor == 0:
+                self.run_predictions()
         
 
     def run_predictions(self):  

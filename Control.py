@@ -51,7 +51,7 @@ class control:
             i.reset_control()
         for i in self.flag:
             i[2].set_ILP_update(i[1],i[2].latencia_required,self.ilp)
-            print(f"Lightpath :{i[2].id} -- slices: {i[2].slices}")
+           # print(f"Lightpath :{i[2].id} -- slices: {i[2].slices}")
 
         self.conf,energy = self.ilp.solver()
         self.energy.append(energy)

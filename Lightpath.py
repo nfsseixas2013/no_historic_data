@@ -54,6 +54,7 @@ class lightpath:
         self.URLLC_factor = 1.40
         self.split = None
         self.error_type = error_type
+        self.time_slot = 600
         #self.ia_factor = 0
 
 	# Interruption
@@ -291,8 +292,10 @@ class lightpath:
             for i in self.traffic:
                 contador = 0
                 interval_data = []
-                while contador <  600: # 10 minutes
+                while contador <  self.time_slot:
                     traffic = np.random.poisson(i,1)[0]
+                    while traffic == 0:
+                        traffic = np.random.poisson(i,1)[0]
                     try:
                         if self.flag_update == True:
                             indices = self.get_conf_indices()
