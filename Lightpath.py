@@ -227,7 +227,7 @@ class lightpath:
                 self.traffic_predicted = self.IA.predict_mMTC(self.ia_data_input)
             elif self.service_type == 'URLLC':
                 self.traffic_predicted = self.IA.predict_URLLC(self.ia_data_input)
-            flag = self.update_connection(self.traffic_predicted)
+            #flag = self.update_connection(self.traffic_predicted)
             self.ia_data_input.pop(0) 
             
         elif len(self.ia_data_input) < 4 and self.service_type == 'eMBB':
@@ -287,11 +287,11 @@ class lightpath:
     
 
     def run(self):
-
+        time_counter = 0
+        interval_data = []
         for i in self.traffic:
             contador = 0
-            interval_data = []
-            while contador <  self.time_slot:
+            while contador <  600: # time_slot dataset.
                 traffic = np.random.poisson(i,1)[0]
                 while traffic == 0:
                     traffic = np.random.poisson(i,1)[0]
@@ -303,19 +303,25 @@ class lightpath:
                     interval_data.append(traffic)
                     yield self.env.timeout(1)
                 except simpy.Interrupt:
-                    contador =-1
+                    contador -=1
+                    time_counter -= 1 
                     self.flag_update = True
                 contador += 1
-            if self.metric == 'median':
-                self.ia_data_input.append(np.median(interval_data))
-            elif self.metric == 'quantile3':
-                self.ia_data_input.append(np.quantile(interval_data,0.75))
-            else:
-                self.ia_data_input.append(np.amax(interval_data))
-            flag = self.setup_predictions()
-            if flag:
-                self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
-            self.env.process(self.send_msg_control(flag))
+                time_counter += 1
+
+            if time_counter == self.time_slot:
+                if self.metric == 'median':
+                    self.ia_data_input.append(np.median(interval_data))
+                elif self.metric == 'quantile3':
+                    self.ia_data_input.append(np.quantile(interval_data,0.75))
+                else:
+                    self.ia_data_input.append(np.amax(interval_data))
+                flag = self.setup_predictions()
+                if flag:
+                    self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
+                self.env.process(self.send_msg_control(flag))
+                time_counter = 0
+                interval_data = []
               
                
     
