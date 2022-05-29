@@ -18,7 +18,7 @@ class control:
         self.ilp = ilp
         self.flag = []
         self.connection = simpy.Store(env,capacity=simpy.core.Infinity)
-        self.demands_size = 16
+        self.demands_size = 44
         self.conf = []
         self.energy = []
         

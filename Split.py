@@ -46,6 +46,7 @@ class split(lightpath):
         self.interval_data = []
         self.error_type = error_type
         self.time_factor = 600*6
+        self.current_traffic = self.traffic[0]
         self.action = self.env.process(self.run())
         
 
@@ -73,6 +74,7 @@ class split(lightpath):
                     self.ia_data_input.append(np.quantile(self.interval_data,0.75))
                 else:
                     self.ia_data_input.append(np.amax(self.interval_data))
+                self.current_traffic = self.traffic[msg[1]]
                 self.run_predictions()
                 counter = 0
                 

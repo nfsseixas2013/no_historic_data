@@ -141,12 +141,13 @@ env.run(until = 600*144)
 
 ## Reports:
 ## Lightpaths:
+dir = "/home/nilton/Arquivos/Resultados/MAX_NOT_HISTORIC/"
 main_data = lightpaths[0].get_reports()
 for index in range(1,len(lightpaths)):
     main_data = pd.concat([main_data,lightpaths[index].get_reports()], axis = 0)
 name = args[0]+"_Lightpaths.csv"
 
-main_data.to_csv("/home/nilton/Arquivos/Resultados/MAX_IA_ULTRA/Lightpaths/"+name)
+main_data.to_csv(dir+"Lightpaths/"+name)
 
 ## Links
 links_fragmentation = []
@@ -156,16 +157,16 @@ name = args[0]+"_Fragmentation.csv"
 fragmentation = [np.mean(links_fragmentation)]
 dict_data = {'Fragmentation_mean': fragmentation}
 data = pd.DataFrame(dict_data)
-data.to_csv("/home/nilton/Arquivos/Resultados/MAX_IA_ULTRA/Links/"+name)
+data.to_csv(dir+"Links/"+name)
 #
 data2 = net.links[0].get_report()
 for index in range(1,len(net.links)):
     data2 = pd.concat([data2,net.links[index].get_report()], axis = 0)
 name = args[0]+"fragmentation_time.csv"
-data2.to_csv("/home/nilton/Arquivos/Resultados/MAX_IA_ULTRA/Frag_time/"+name)
+data2.to_csv(dir+"Frag_time/"+name)
 
 ### Energy costs:
 name = args[0]+"_energy_costs.csv"
-controller.get_energy_costs().to_csv("/home/nilton/Arquivos/Resultados/MAX_IA_ULTRA/ILP/"+name)
+controller.get_energy_costs().to_csv(dir+"ILP/"+name)
 
 

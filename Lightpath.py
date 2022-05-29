@@ -54,7 +54,9 @@ class lightpath:
         self.URLLC_factor = 1.40
         self.split = None
         self.error_type = error_type
-        self.time_slot = 600*6
+        self.time_slot = 600*1
+        self.current_traffic = self.traffic[0]
+        self.index = 0
         #self.ia_factor = 0
 
 	# Interruption
@@ -220,25 +222,7 @@ class lightpath:
     
     def setup_predictions(self):
         flag = False
-        if len(self.ia_data_input) == 4:
-            if self.service_type == 'eMBB':
-                self.traffic_predicted = self.IA.predict_eMBB(self.ia_data_input)+self.eMBB_factor
-            elif self.service_type == 'mMTC':
-                self.traffic_predicted = self.IA.predict_mMTC(self.ia_data_input)+self.mMTC_factor
-            elif self.service_type == 'URLLC':
-                self.traffic_predicted = self.IA.predict_URLLC(self.ia_data_input)+self.URLLC_factor
-            #flag = self.update_connection(self.traffic_predicted)
-            self.ia_data_input.pop(0) 
-            
-        elif len(self.ia_data_input) < 4 and self.service_type == 'eMBB':
-            self.traffic_predicted = self.ia_data_input[len(self.ia_data_input)-1]+self.eMBB_factor
-        elif len(self.ia_data_input) < 4 and self.service_type == 'mMTC':
-            self.traffic_predicted = self.ia_data_input[len(self.ia_data_input)-1]+self.mMTC_factor
-        elif len(self.ia_data_input) < 4 and self.service_type == 'URLLC':
-            self.traffic_predicted = self.ia_data_input[len(self.ia_data_input)-1]+self.URLLC_factor
-
-        flag = self.update_connection(self.traffic_predicted)
-        print("\n lightpath: {} - Prediction: {} \n".format(self.id,self.traffic_predicted))
+        flag = self.update_connection(self.current_traffic)
         return flag
         
 
@@ -270,7 +254,7 @@ class lightpath:
             yield self.env.timeout(cost)
             if type(self).__name__ == 'lightpath':
                 if self.split != None:
-                    msg = [traffic]
+                    msg = [traffic,self.index+1]
                     self.split.connection_lightpath.put(msg)
         
    
@@ -289,7 +273,8 @@ class lightpath:
     def run(self):
         time_counter = 0
         interval_data = []
-        for i in self.traffic:
+        for self.index in range(0, len(self.traffic)):
+            i = self.traffic[self.index]
             contador = 0
             while contador <  600: # time_slot dataset.
                 traffic = np.random.poisson(i,1)[0]
@@ -316,6 +301,8 @@ class lightpath:
                     self.ia_data_input.append(np.quantile(interval_data,0.75))
                 else:
                     self.ia_data_input.append(np.amax(interval_data))
+                if self.index+1 < len(self.traffic):
+                    self.current_traffic = self.traffic[self.index+1]
                 flag = self.setup_predictions()
                 if flag:
                     self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
