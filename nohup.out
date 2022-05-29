@@ -4,3 +4,4 @@ Can't detect primary monitor.
 2022-01-18 11:43:36,328 - WARNING linux_scaling.get_primary_monitor_name:59
 Can't detect primary monitor.
 
+taskset: failed to execute ./EON_SIMULATOR_k_60/simulation_batch.sh: No such file or directory
