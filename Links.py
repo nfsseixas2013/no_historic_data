@@ -101,21 +101,34 @@ class link:
             else:
                 template.append(0)
         return template
+
+
+    def get_total_free(self,template):
+        counter = 0
+        for i in template:
+            if i == 0:
+                counter += 1
+        return counter
                 
             
-    def get_fragmentation(self, time):
+    def get_fragmentation(self,time):
         template = self.get_template_link()
+        total = self.get_total_free(template)
         counter = 0
-        flag = False
-        for i in range(len(template)-1,-1,-1):
-           if flag == False: 
-               if template[i] == 1:
-                flag = True
-           else:
-                if template[i] == 0:
-                    counter += 1
-        self.fragmentation.append(counter/len(template))
-        self.frag_x_time.append([time,(counter/len(template)), self.id])
+        largest = 0
+        for i in template:
+            if i == 0:
+                counter += 1
+            elif i == 1:
+                if counter > largest:
+                    largest = counter
+                counter = 0
+        if total != 0:
+            fragmentation = 1-(largest/total)
+        else:
+            fragmentation = 0
+        self.fragmentation.append(fragmentation)
+        self.frag_x_time.append([time,fragmentation, self.id])
         
     def get_report(self):
         time = [x[0] for x in self.frag_x_time]
