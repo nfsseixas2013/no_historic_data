@@ -3,8 +3,8 @@
 for i in $(seq 1 10);
 do
 	
-	nome=dddm_k_60_$i
-	dir=/home/nilton/Arquivos/EON_SIMULATOR_k_60/Examples
+	nome=no_historic_k_10_$i
+	dir=/home/nilton/Arquivos/no_historic_data/Examples
 	cd $dir
 	python sim06.py  $nome $i
 done

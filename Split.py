@@ -40,13 +40,12 @@ class split(lightpath):
         self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_lightpath = simpy.Store(env,capacity=simpy.core.Infinity)
-        self.eMBB_factor = 300.5
-        self.mMTC_factor = 2.50
-        self.URLLC_factor = 1.40
         self.interval_data = []
         self.error_type = error_type
-        self.time_factor = 600*6
+        self.time_factor = 600
+        self.interval = 2
         self.current_traffic = self.traffic[0]
+        self.data_intervals = []
         self.action = self.env.process(self.run())
         
 
@@ -74,7 +73,9 @@ class split(lightpath):
                     self.ia_data_input.append(np.quantile(self.interval_data,0.75))
                 else:
                     self.ia_data_input.append(np.amax(self.interval_data))
-                self.current_traffic = self.traffic[msg[1]]
+                if msg != None:
+                    self.current_traffic = np.random.poisson(self.traffic[msg[1]],1)[0]
+                self.data_intervals.append(1)
                 self.run_predictions()
                 counter = 0
                 
@@ -84,6 +85,7 @@ class split(lightpath):
         flag = super().setup_predictions()
         if flag:
             self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
+            self.data_intervals.pop(0)
         self.env.process(super().send_msg_control(flag))
 
     

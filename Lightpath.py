@@ -49,14 +49,14 @@ class lightpath:
         self.connection_control = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_nodes = simpy.Store(env,capacity=simpy.core.Infinity)
         self.connection_lightpath = simpy.Store(env,capacity=simpy.core.Infinity)
-        self.eMBB_factor = 300.5
-        self.mMTC_factor = 2.50
-        self.URLLC_factor = 1.40
         self.split = None
         self.error_type = error_type
-        self.time_slot = 600*1
+        self.time_slot = 600
         self.current_traffic = self.traffic[0]
         self.index = 0
+        self.interval = 2
+        self.data_intervals = []
+        # Não há IA_factor.
         #self.ia_factor = 0
 
 	# Interruption
@@ -222,8 +222,11 @@ class lightpath:
     
     def setup_predictions(self):
         flag = False
-        flag = self.update_connection(self.current_traffic)
-        return flag
+        if len(self.data_intervals) == self.interval:
+            flag = self.update_connection(self.current_traffic)
+            self.data_intervals.pop(0)
+            return flag
+        return True
         
 
     def sending(self,load): # Modularization of sending of one msg
@@ -254,7 +257,10 @@ class lightpath:
             yield self.env.timeout(cost)
             if type(self).__name__ == 'lightpath':
                 if self.split != None:
-                    msg = [traffic,self.index+1]
+                    if self.index +1 < len(self.traffic):
+                        msg = [traffic,self.index+1]
+                    else:
+                        msg = [traffic,self.index]
                     self.split.connection_lightpath.put(msg)
         
    
@@ -302,7 +308,8 @@ class lightpath:
                 else:
                     self.ia_data_input.append(np.amax(interval_data))
                 if self.index+1 < len(self.traffic):
-                    self.current_traffic = self.traffic[self.index+1]
+                    self.current_traffic = np.random.poisson(self.traffic[self.index+1],1)[0] 
+                self.data_intervals.append(1)
                 flag = self.setup_predictions()
                 if flag:
                     self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
