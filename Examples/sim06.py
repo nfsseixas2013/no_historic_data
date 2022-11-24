@@ -169,4 +169,15 @@ data2.to_csv(dir+"Frag_time/"+name)
 name = args[0]+"_energy_costs.csv"
 controller.get_energy_costs().to_csv(dir+"ILP/"+name)
 
+##
+main_data2 = lightpaths[0].get_reports_2()
+for index in range(1,len(lightpaths)):
+    main_data2 = pd.concat([main_data2,lightpaths[index].get_reports_2()], axis = 0, sort=True)
+name = args[0]+"_Interruptions.csv"
+main_data2.to_csv(dir+"Interruptions/"+name)
+
+data_decision = controller.get_time_decision()
+name = args[0]+"_Time_decision.csv"
+data_decision.to_csv(dir+"Time_Decision/"+name)
+
 

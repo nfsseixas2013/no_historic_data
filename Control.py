@@ -10,6 +10,8 @@ import simpy
 import numpy as np
 import pandas as pd
 from statistics import mean
+import time
+
 class control:
     def __init__(self, env, net, ilp):
         self.lightpaths = []
@@ -21,7 +23,8 @@ class control:
         self.demands_size = 44
         self.conf = []
         self.energy = []
-        
+        self.time_decision = []
+
     def set_lightpaths(self,lightpath):
         self.lightpaths.append(lightpath)
     '''        
@@ -64,15 +67,19 @@ class control:
     def receive_msg(self,msg):
         msg = yield self.connection.get()
         self.flag.append(msg)
+        start = time.time()
         if len(self.flag) == self.demands_size:
             for i in self.flag:
                 if i[0] == False:
                     yield self.env.process(self.smart_routing())
                     break
-
             for link in self.net.links:
                 link.get_fragmentation(self.env.now)
             self.flag.clear()
+        end = time.time()
+        time_decision = end - start
+        self.time_decision.append(time_decision)
+
         yield self.env.timeout(0.000001)
         
     def init_energy(self, cost):
@@ -83,6 +90,11 @@ class control:
         data.append(mean(self.energy))
         dict_data = {'energy_cost': data}
         return pd.DataFrame(dict_data)
+
+    def get_time_decision(self):
+        dict_data = {'Time_decision': self.time_decision}
+        return pd.DataFrame(dict_data)
+
                 
                 
                 

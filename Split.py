@@ -46,6 +46,11 @@ class split(lightpath):
         self.interval = 2
         self.current_traffic = self.traffic[0]
         self.data_intervals = []
+        self.interruptions = 0
+        self.slices_backup = []
+        self.path_backup = 0
+        self.current_time_decision = 0
+        self.modulation_backup = 0
         self.action = self.env.process(self.run())
         
 
@@ -60,6 +65,10 @@ class split(lightpath):
                     if self.flag_update:
                         indices = super().get_conf_indices()
                         super().set_conf(indices)
+                        if len(self.slices_backup) > 0:
+                            if super().get_interruptions_count(self.slices[self.path][self.modulation], self.slices_backup[self.path_backup][self.modulation_backup]):
+                                self.interruptions += 1
+                            self.flag_update = False
                     self.env.process(super().sending_traffic(traffic))
                     self.interval_data.append(traffic)
                     yield self.env.timeout(1)
@@ -67,19 +76,12 @@ class split(lightpath):
                 self.flag_update = True
                 counter -= 1
             if counter == self.time_factor:
-                if self.metric == 'median':
-                    self.ia_data_input.append(np.median(self.interval_data))
-                elif self.metric == 'quantile3':
-                    self.ia_data_input.append(np.quantile(self.interval_data,0.75))
-                else:
-                    self.ia_data_input.append(np.amax(self.interval_data))
                 if msg != None:
                     self.current_traffic = np.random.poisson(self.traffic[msg[1]],1)[0]
                 self.data_intervals.append(1)
                 self.run_predictions()
                 counter = 0
-                
-        
+                   
 
     def run_predictions(self):  
         flag = super().setup_predictions()

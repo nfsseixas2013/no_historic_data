@@ -12,6 +12,7 @@ from Template import template
 import simpy
 from IA.IA import IA
 import pandas as pd
+from copy import copy
 class lightpath:
     
     def __init__(self, env, cod, mode, source, destination, traffic, net, service_type, metric, IA, controller, error_type):
@@ -56,6 +57,11 @@ class lightpath:
         self.index = 0
         self.interval = 2
         self.data_intervals = []
+        self.interruptions = 0
+        self.slices_backup = []
+        self.path_backup = 0
+        self.current_time_decision = 0
+        self.modulation_backup = 0
         # Não há IA_factor.
         #self.ia_factor = 0
 
@@ -137,7 +143,8 @@ class lightpath:
                     self.set_slices_candidates(a,aux[a],i.shadow[a][1],flag)
                 indice += 1
             slices.append(aux)
-        self.slices = slices
+        self.slices_backup = self.slices.copy()
+        self.slices = slices.copy()
         return slices
         
     def set_ILP(self,traffic,latencia,ILP): # REF9 -> REF1,REF2,REF3,REF4,REF8
@@ -165,7 +172,9 @@ class lightpath:
             Interface.fill_latencies(self.id,p,latencia_values[p],ILP)
   
     def set_conf(self,indice):
+        self.path_backup = copy(self.path)
         self.path = indice[1]
+        self.modulation_backup = copy(self.modulation)
         self.modulation = indice[3]
         self.set_connection()
         self.granted = Interface.get_bandwidth(self.slots[self.modulation], self.modulation, self.net)
@@ -275,6 +284,11 @@ class lightpath:
             if node1 in i.nodes and node2 in i.nodes:
                 return i
     
+    def get_interruptions_count(self,vetorA,vetorB):
+        if vetorA[0] == vetorB[0]:
+            return False
+        return True
+    
 
     def run(self):
         time_counter = 0
@@ -290,6 +304,10 @@ class lightpath:
                     if self.flag_update == True:
                         indices = self.get_conf_indices()
                         self.set_conf(indices)
+                        if len(self.slices_backup) > 0:
+                            if self.get_interruptions_count(self.slices[self.path][self.modulation], self.slices_backup[self.path_backup][self.modulation_backup]):
+                                self.interruptions += 1
+                            self.flag_update = False
                     self.env.process(self.sending_traffic(traffic))
                     interval_data.append(traffic)
                     yield self.env.timeout(1)
@@ -324,7 +342,7 @@ class lightpath:
     
 ################################# CONTROL ###########################################################
     def send_msg_control(self,flag):
-        msg = [flag, self.traffic_predicted, self]
+        msg = [flag, self.traffic_predicted, self, copy(self.current_time_decision)]
         self.controller.connection.put(msg)
         yield self.controller.env.process(self.controller.receive_msg(msg))
         yield self.env.timeout(0.000001)
@@ -350,5 +368,7 @@ class lightpath:
         return pd.DataFrame(data_dict)
 
     
-    
+    def get_reports_2(self):
+        data_dict = {'Interruptions':[self.interruptions], 'id': [self.id]}
+        return pd.DataFrame(data_dict)
      
